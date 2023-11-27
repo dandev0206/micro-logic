@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{ae58cc5c-b8bc-4aa0-b26d-ae05bd90556d}</ProjectGuid>
+    <RootNamespace>vk2d</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(ProjectDir)lib\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(ProjectDir)lib\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="include\vk2d\graphics\buffer.h" />
+    <ClInclude Include="include\vk2d\graphics\drawable.h" />
+    <ClInclude Include="include\vk2d\graphics\draw_list.h" />
+    <ClInclude Include="include\vk2d\graphics\vertex_builder.h" />
+    <ClInclude Include="include\vk2d\system\dialog.h" />
+    <ClInclude Include="include\vk2d\system\file_dialog.h" />
+    <ClInclude Include="include\vk2d\system\font.h" />
+    <ClInclude Include="include\vk2d\graphics\render_texture.h" />
+    <ClInclude Include="include\vk2d\system\clipboard.h" />
+    <ClInclude Include="include\vk2d\system\event.hpp" />
+    <ClInclude Include="include\vk2d\graphics\image.h" />
+    <ClInclude Include="include\vk2d\graphics\color.hpp" />
+    <ClInclude Include="include\vk2d\graphics\pipeline.h" />
+    <ClInclude Include="include\vk2d\graphics\render_options.h" />
+    <ClInclude Include="include\vk2d\graphics\texture_view.h" />
+    <ClInclude Include="include\vk2d\system\glyph.h" />
+    <ClInclude Include="include\vk2d\system\keyboard.h" />
+    <ClInclude Include="include\vk2d\graphics\render_target.h" />
+    <ClInclude Include="include\vk2d\graphics\texture.h" />
+    <ClInclude Include="include\vk2d\system\cursor.h" />
+    <ClInclude Include="include\vk2d\system\message_box.h" />
+    <ClInclude Include="include\vk2d\vector_type.h" />
+    <ClInclude Include="include\vk2d\graphics\vertex.hpp" />
+    <ClInclude Include="include\vk2d\graphics\vertex_buffer.h" />
+    <ClInclude Include="include\vk2d\vk2d_config.h" />
+    <ClInclude Include="include\vk2d\vk_instance.h" />
+    <ClInclude Include="include\vk2d\rect.hpp" />
+    <ClInclude Include="include\vk2d\system\window.h" />
+    <ClInclude Include="include\vk2d\system\mouse.h" />
+    <ClInclude Include="src\platform\windows_cursor_impl.hpp" />
+    <ClInclude Include="src\platform\window_impl.h" />
+    <ClInclude Include="include\vk2d\transform.hpp" />
+    <ClInclude Include="src\shaders\shaders.h" />
+    <ClInclude Include="include\vk2d\transformable.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\draw_list.cpp" />
+    <ClCompile Include="src\platform\windows_file_dialog_impl.cpp" />
+    <ClCompile Include="src\platform\windows_message_box_impl.cpp" />
+    <ClCompile Include="src\vertex_builder.cpp" />
+    <ClCompile Include="src\buffer.cpp" />
+    <ClInclude Include="include\vk2d\graphics\render_states.h" />
+    <ClCompile Include="src\cursor.cpp" />
+    <ClCompile Include="src\font.cpp" />
+    <ClCompile Include="src\image.cpp" />
+    <ClCompile Include="src\platform\windows_clipboard_impl.cpp" />
+    <ClCompile Include="src\platform\windows_keyboard_impl.cpp" />
+    <ClCompile Include="src\platform\windows_mouse_impl.cpp" />
+    <ClCompile Include="src\pipeline.cpp" />
+    <ClCompile Include="src\render_states.cpp" />
+    <ClCompile Include="src\render_target.cpp" />
+    <ClCompile Include="src\render_texture.cpp" />
+    <ClCompile Include="src\texture.cpp" />
+    <ClCompile Include="src\texture_view.cpp" />
+    <ClCompile Include="src\transform.cpp" />
+    <ClCompile Include="src\vertex_buffer.cpp" />
+    <ClCompile Include="src\vk_instance.cpp" />
+    <ClCompile Include="src\window.cpp" />
+    <ClInclude Include="src\platform\windows_window_impl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\shaders\build.bat" />
+    <None Include="src\shaders\shader0.frag" />
+    <None Include="src\shaders\shader0.vert" />
+    <None Include="src\shaders\shader1.frag" />
+    <None Include="src\shaders\shader1.vert" />
+    <None Include="src\shaders\shader2.frag" />
+    <None Include="src\shaders\shader2.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\shaders\shader0.frag.txt" />
+    <Text Include="src\shaders\shader0.vert.txt" />
+    <Text Include="src\shaders\shader1.frag.txt" />
+    <Text Include="src\shaders\shader1.vert.txt" />
+    <Text Include="src\shaders\shader2.frag.txt" />
+    <Text Include="src\shaders\shader2.vert.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,155 @@
+<CircuitElements grid_pixel_size="30">
+	<LogicGate name="7448">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="-1, -1"></Pin>
+			<Pin type="" io="output" pinout="0" pos="1, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="0, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-90, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="-60, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="-30, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="60, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="90, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="-90, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="-60, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="60, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="90, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="203, 50" pos="0, 0" origin="102, 25" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">7448</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="Full Adder">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="-1, -1"></Pin>
+			<Pin type="" io="output" pinout="0" pos="1, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="0, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-30, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">FA</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="minimal 2-input AND">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="0.5, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="0, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="15, 23" pos="0, -15" origin="7, 8" col="195, 195, 195"></Rect>
+			<Rect size="15, 23" pos="-15, 15" origin="7, 15" col="195, 195, 195"></Rect>
+			<Rect size="15, 23" pos="15, 15" origin="7, 15" col="195, 195, 195"></Rect>
+			<Rect size="54, 20" pos="0, 0" origin="27, 10" col="55, 55, 55"></Rect>
+			<Text size="20" pos="0, 0" align="0.5, 0.5">AND</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="2-input AND">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">AND</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="2-input OR">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">OR</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="2-input NAND">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">NAND</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="2-input NOR">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">NOR</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="2-input XOR">
+		<Pins>
+			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="17, 23" pos="-30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
+			<Rect size="17, 23" pos="0, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">XOR</Text>
+		</Appearance>
+	</LogicGate>
+</CircuitElements>
