@@ -2,9 +2,9 @@
 
 #include "../gui/docking_window.h"
 
-class Window_Browse : public DockingWindow {
+class Window_Explorer : public DockingWindow {
 public:
-	Window_Browse();
+	Window_Explorer();
 
 	void showUI();
 };

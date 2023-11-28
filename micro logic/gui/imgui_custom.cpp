@@ -11,6 +11,17 @@ static ImTextureID get_texture_ID(const vk2d::Texture& texture)
 	return *(ImTextureID*)&descriptor_set;
 }
 
+int32_t create_hash(int32_t hash, const ImTextureID& val) 
+{
+	return hash ^ (intptr_t)val >> 0 ^ (intptr_t)val >> 32;
+}
+
+int32_t create_hash(int32_t hash, const Rect& val)
+{
+	auto* raw = (int32_t*)(&val);
+	return hash ^ raw[0] ^ raw[1] ^ raw[2] ^ raw[3];
+}
+
 namespace ImGui {
 
 void Image(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec2& size, const vk2d::Color& tintColor, const vk2d::Color& borderColor)
@@ -33,14 +44,18 @@ bool ImageButton(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2
 	ImVec2 uv0(rect.left / texture_size.x, rect.top / texture_size.y);
 	ImVec2 uv1((rect.left + rect.width) / texture_size.x, (rect.top + rect.height) / texture_size.y);
 
-	int hash = (int)((intptr_t)texture_id & UINT32_MAX);
-	hash *= (int)rect.left * (int)rect.top * (int)rect.width * (int)rect.height;
+	int hash = 0;
+	hash = create_hash(hash, texture_id);
+	hash = create_hash(hash, rect);
 
-	auto id = window->GetID(hash);
-
-	auto ret = ImageButtonEx(id, texture_id, ImVec2(size.x, size.y), uv0, uv1, to_ImColor(bgColor), to_ImColor(tintColor));
-	
-	return ret;
+	return ImageButtonEx(
+		window->GetID(hash),
+		texture_id, 
+		ImVec2(size.x, size.y),
+		uv0,
+		uv1,
+		to_ImColor(bgColor),
+		to_ImColor(tintColor));
 }
 
 bool ToggleImageButton(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec2& size, int* v, int v_button)

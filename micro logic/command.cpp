@@ -11,6 +11,10 @@ static AABB transform_AABB(const AABB& aabb, const vec2& delta, const vec2& orig
 	return result;
 }
 
+CommandGroup::CommandGroup() :
+	modifying(true)
+{}
+
 void CommandGroup::onPush(SchematicSheet& sheet)
 {
 	for (auto iter = commands.begin(); iter != commands.end(); ++iter)
@@ -32,6 +36,11 @@ void CommandGroup::undo(SchematicSheet& sheet)
 std::string CommandGroup::what() const
 {
 	return description;
+}
+
+bool CommandGroup::isModifying() const
+{
+	return modifying;
 }
 
 void CommandGroup::append(std::unique_ptr<Command>&& cmd)
@@ -225,6 +234,11 @@ std::string Command_Select::what() const
 	default:
 		return "Unkown Selection Type";
 	}
+}
+
+bool Command_Select::isModifying() const
+{
+	return false;
 }
 
 void Command_Select::sortSelections()

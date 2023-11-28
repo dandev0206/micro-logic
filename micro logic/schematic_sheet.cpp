@@ -6,7 +6,8 @@ SchematicSheet::SchematicSheet() :
 	position(0, 0),
 	scale(1.f),
 	grid_pixel_size(DEFAULT_GRID_SIZE),
-	id_counter(0)
+	id_counter(0),
+	file_saved(false)
 {}
 
 void SchematicSheet::serialize(std::ostream& os) const
@@ -37,6 +38,8 @@ void SchematicSheet::unserialize(std::istream& is)
 		auto new_elem = CircuitElement::create(is);
 		bvh.insert(new_elem->getAABB(), std::move(new_elem));
 	}
+
+	file_saved = true;
 }
 
 void SchematicSheet::setPosition(const vec2& pos)

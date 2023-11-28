@@ -4,6 +4,7 @@
 #include <imgui_internal.h>
 #include "../gui/imgui_custom.h"
 #include "../main_window.h"
+#include "../side_menus.h"
 
 #define ICON_TEXTURE_VAR main_window.textures[TEXTURE_ICONS_IDX]
 #include "../icons.h"
@@ -194,7 +195,8 @@ void Window_Library::showSelectable(const LogicGate& gate)
 
 			menu->curr_gate = gate_idx;
 			resetPreview();
-			main_window.setCurrentSideMenu(3);
+			auto menu = main_window.findSideMenu<Menu_Library>();
+			main_window.setCurrentSideMenu(menu);
 		}
 	}
 

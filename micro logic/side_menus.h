@@ -7,7 +7,7 @@
 class Menu_Info : public SideMenu
 {
 public:
-	Menu_Info(uint32_t menu_idx);
+	Menu_Info();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
@@ -17,7 +17,7 @@ public:
 class Menu_Zoom : public SideMenu
 {
 public:
-	Menu_Zoom(uint32_t menu_idx);
+	Menu_Zoom();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
@@ -30,7 +30,7 @@ public:
 
 class SelectingSideMenu abstract : public SideMenu {
 public:
-	SelectingSideMenu(const char* menu_name, uint32_t menu_idx);
+	SelectingSideMenu(const char* menu_name);
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
@@ -56,7 +56,7 @@ public:
 class Menu_Select : public SelectingSideMenu
 {
 public:
-	Menu_Select(uint32_t menu_idx);
+	Menu_Select();
 
 	void loop() override;
 	void menuButton() override;
@@ -70,7 +70,7 @@ public:
 class Menu_Library : public SideMenu
 {
 public:
-	Menu_Library(uint32_t menu_idx);
+	Menu_Library();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
@@ -84,7 +84,7 @@ public:
 class Menu_Unit : public SideMenu
 {
 public:
-	Menu_Unit(uint32_t menu_idx);
+	Menu_Unit();
 
 	void loop() override;
 	void menuButton() override;
@@ -93,7 +93,7 @@ public:
 class Menu_Shapes : public SideMenu
 {
 public:
-	Menu_Shapes(uint32_t menu_idx);
+	Menu_Shapes();
 
 	void loop() override;
 	void menuButton() override;
@@ -102,7 +102,7 @@ public:
 class Menu_Label : public SideMenu
 {
 public:
-	Menu_Label(uint32_t menu_idx);
+	Menu_Label();
 
 	void loop() override;
 	void menuButton() override;
@@ -111,7 +111,7 @@ public:
 class Menu_Copy : public SelectingSideMenu
 {
 public:
-	Menu_Copy(uint32_t menu_idx);
+	Menu_Copy();
 
 	void loop() override;
 	void menuButton() override;
@@ -126,14 +126,14 @@ public:
 	void beginClipboardPaste(std::istream& is);
 
 	std::vector<std::unique_ptr<CircuitElement>> elements;
-	int32_t prev_menu;
+	SideMenu* prev_menu;
 	bool from_clipboard;
 };
 
 class Menu_Cut : public SelectingSideMenu
 {
 public:
-	Menu_Cut(uint32_t menu_idx);
+	Menu_Cut();
 
 	void loop() override;
 	void menuButton() override;
@@ -148,14 +148,14 @@ public:
 	void beginClipboardPaste(std::istream& is);
 
 	std::vector<std::unique_ptr<CircuitElement>> elements;
-	int32_t prev_menu;
+	SideMenu* prev_menu;
 	bool from_clipboard;
 };
 
 class Menu_Delete : public SideMenu
 {
 public:
-	Menu_Delete(uint32_t menu_idx);
+	Menu_Delete();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
@@ -166,9 +166,7 @@ public:
 class WiringSideMenu abstract : public SideMenu
 {
 public:
-	WiringSideMenu(const char* menu_name, uint32_t menu_idx);
-
-	void upperMenu() override;
+	WiringSideMenu(const char* menu_name);
 
 	vec2 getMiddle(const vec2& p0, const vec2& p1) const;
 	bool checkContinueWiring(const vec2& pos) const;
@@ -181,11 +179,12 @@ public:
 class Menu_Wire : public WiringSideMenu
 {
 public:
-	Menu_Wire(uint32_t menu_idx);
+	Menu_Wire();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
 	void menuButton() override;
+	void upperMenu() override;
 
 	void addWires(std::vector<Wire>&& stack);
 	bool checkWireCrossing(const vec2& pos) const;
@@ -194,17 +193,18 @@ public:
 class Menu_Net : public WiringSideMenu
 {
 public:
-	Menu_Net(uint32_t menu_idx);
+	Menu_Net();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
 	void menuButton() override;
+	void upperMenu() override;
 };
 
 class Menu_SplitWire : public SideMenu
 {
 public:
-	Menu_SplitWire(uint32_t menu_idx);
+	Menu_SplitWire();
 
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;

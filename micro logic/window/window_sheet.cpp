@@ -15,13 +15,14 @@ static inline ImRect to_ImRect(const vk2d::Rect& rect)
 Window_Sheet::Window_Sheet() :
 	sheet(nullptr),
 	curr_command(-1),
-	last_saved_command(-2),
+	last_saved_command_min(-2),
+	last_saved_command_max(-2),
+	content_center(0.f),
 	prev_position(0.f),
 	prev_scale(1.f),
 	capturing_mouse(false),
 	update_grid(true),
-	close_window(false),
-	file_saved(false)
+	close_window(false)
 {}
 
 Window_Sheet::Window_Sheet(SchematicSheet& sheet) :
@@ -36,17 +37,22 @@ Window_Sheet::~Window_Sheet()
 
 void Window_Sheet::showUI()
 {
+	if (!show) {
+		visible = false;
+		return;
+	};
+
 	auto& main_window = MainWindow::get();
 
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoBackground;
-	if (!file_saved) flags |= ImGuiWindowFlags_UnsavedDocument;
+	if (!sheet->file_saved) flags |= ImGuiWindowFlags_UnsavedDocument;
 
-	DockingWindow::beginDockWindow(name.c_str(), nullptr, flags);
+	DockingWindow::beginDockWindow(name.c_str(), &show, flags);
 
-	ImGui::InvisibleButton("##test", { to_ImVec2(content_rect.getSize()) });
-	capturing_mouse = ImGui::IsItemHovered();
+	if (visible && content_rect.width != 0 && content_rect.height != 0) {
+		ImGui::InvisibleButton("##InvisibleButton", { to_ImVec2(content_rect.getSize()) });
+		capturing_mouse = ImGui::IsItemHovered();
 
-	if (visible) {
 		if (prev_position != sheet->position || prev_scale != sheet->scale) {
 			prev_position = sheet->position;
 			prev_scale    = sheet->scale;
@@ -56,13 +62,16 @@ void Window_Sheet::showUI()
 		content_center = content_rect.center();
 
 		if (focussed)
-			main_window.setCurrentWindowSheet(*this);
-		if (main_window.curr_menu == 3 && hovered) {
-			if (dynamic_cast<Menu_Library&>(*main_window.side_menus[3]).curr_gate != -1) {
+			main_window.setCurrentWindowSheet(this);
+
+		if (auto* menu = dynamic_cast<Menu_Library*>(main_window.curr_menu);  menu && hovered) {
+			if (menu->curr_gate != -1) {
 				ImGui::SetWindowFocus();
-				main_window.setCurrentWindowSheet(*this);
+				main_window.setCurrentWindowSheet(this);
 			}
 		}
+	} else {
+		capturing_mouse = false;
 	}
 
 	DockingWindow::endDockWindow();
@@ -123,7 +132,7 @@ void Window_Sheet::EventProc(const vk2d::Event& e, float dt)
 		}
 	} break;
 	case Event::MouseMoved: {
-		if (main_window.curr_menu == -1 && Mouse::isPressed(Mouse::Left)) {
+		if (!main_window.curr_menu && Mouse::isPressed(Mouse::Left)) {
 			auto delta       = e.mouseMove.delta;
 			sheet->position -= (vec2)delta / sheet->grid_pixel_size;
 		}
@@ -137,13 +146,33 @@ void Window_Sheet::EventProc(const vk2d::Event& e, float dt)
 	}
 }
 
-void Window_Sheet::saveSheet(const std::string& dir)
+bool Window_Sheet::isCommandInSavedRange(int64_t cmd_idx) const
 {
-	std::ofstream of(dir + "\\" + sheet->name + ".mls");
-	sheet->serialize(of);
-	
-	file_saved         = true;
-	last_saved_command = curr_command;
+	return last_saved_command_min <= cmd_idx && cmd_idx <= last_saved_command_max;
+}
+
+void Window_Sheet::sheetSaved()
+{
+	sheet->file_saved = true;
+
+	last_saved_command_min = curr_command;
+	last_saved_command_max = curr_command;
+
+	while (last_saved_command_min >= 0) {
+		if (last_saved_command_min == 0)
+			last_saved_command_min = -1;
+		else if (!command_stack[last_saved_command_min - 1]->isModifying())
+			last_saved_command_min -= 1;
+		else 
+			break;
+	}
+
+	while (last_saved_command_max < command_stack.size() - 1) {
+		if (!command_stack[last_saved_command_max + 1]->isModifying())
+			last_saved_command_max += 1;
+		else
+			break;
+	}
 }
 
 void Window_Sheet::bindSchematicSheet(SchematicSheet& sheet)
@@ -151,13 +180,16 @@ void Window_Sheet::bindSchematicSheet(SchematicSheet& sheet)
 	auto& main_window = MainWindow::get();
 
 	command_stack.clear();
-	curr_command       = -1;
-	last_saved_command = -2;
+	curr_command           = -1;
+	last_saved_command_min = sheet.file_saved ? -2 : -1;
+	last_saved_command_max = sheet.file_saved ? -2 : -1;
 
 	this->sheet   = &sheet;
+	name          = sheet.name + "###" + sheet.guid;
 	prev_position = sheet.position;
 	prev_scale    = sheet.scale;
 	update_grid   = true;
+	show          = true;
 
 	draw_list.clear();
 	draw_list.resize(2);
@@ -239,39 +271,75 @@ void Window_Sheet::clearHoverList()
 	hover_list.clear();
 }
 
-void Window_Sheet::pushCommand(std::unique_ptr<Command>&& command, bool skip_redo)
+void Window_Sheet::pushCommand(std::unique_ptr<Command>&& cmd, bool skip_redo)
 {
 	while (curr_command != command_stack.size() - 1)
 		command_stack.pop_back();
 
-	command->onPush(*sheet);
-	if (!skip_redo) command->redo(*sheet);
-	command_stack.push_back(std::move(command));
+	if (last_saved_command_max == curr_command++ && !cmd->isModifying())
+		last_saved_command_max += 1;
+
+	cmd->onPush(*sheet);
+
+	if (!skip_redo) 
+		cmd->redo(*sheet);
+	if (cmd->isModifying())
+		MainWindow::get().updateThumbnail(*sheet);
+
+	command_stack.push_back(std::move(cmd));
+
+	sheet->file_saved = isCommandInSavedRange(curr_command);
+}
+
+void Window_Sheet::setCurrCommandTo(int64_t next_cmd)
+{
+	assert(-1 <= next_cmd && next_cmd < command_stack.size());
 	
-	curr_command++;
-	file_saved = false;
+	bool modified = false;
+
+	while (next_cmd > curr_command) {
+		auto& cmd = command_stack[++curr_command];
+
+		cmd->redo(*sheet);
+		modified |= cmd->isModifying();
+	}
+	while (next_cmd < curr_command) {
+		auto& cmd = command_stack[curr_command--];
+
+		cmd->undo(*sheet);
+		modified |= cmd->isModifying();
+	}
+
+	if (modified)
+		MainWindow::get().updateThumbnail(*sheet);
+
+	sheet->file_saved = isCommandInSavedRange(curr_command);
 }
 
 void Window_Sheet::redo()
 {
-	if (curr_command == command_stack.size() - 1) return;
-	command_stack[++curr_command]->redo(*sheet);
+	assert(curr_command != command_stack.size() - 1);
 
-	if (last_saved_command == curr_command)
-		file_saved = true;
-	else
-		file_saved = false;
+	auto& cmd = command_stack[++curr_command];
+
+	cmd->redo(*sheet);
+	if (cmd->isModifying())
+		MainWindow::get().updateThumbnail(*sheet);
+
+	sheet->file_saved = isCommandInSavedRange(curr_command);
 }
 
 void Window_Sheet::undo()
 {
-	if (curr_command == -1) return;
-	command_stack[curr_command--]->undo(*sheet);
+	assert(curr_command != -1);
 
-	if (last_saved_command == curr_command) 
-		file_saved = true;
-	else 
-		file_saved = false;
+	auto& cmd = command_stack[curr_command--];
+
+	cmd->undo(*sheet);
+	if (cmd->isModifying())
+		MainWindow::get().updateThumbnail(*sheet);
+
+	sheet->file_saved = isCommandInSavedRange(curr_command);
 }
 
 bool Window_Sheet::isRedoable() const
@@ -287,7 +355,9 @@ bool Window_Sheet::isUndoable() const
 void Window_Sheet::clearCommand()
 {
 	command_stack.clear();
-	curr_command = -1;
+	curr_command           = -1;
+	last_saved_command_max = sheet->file_saved ? -1 : -2;
+	last_saved_command_min = sheet->file_saved ? -1 : -2;
 }
 
 void Window_Sheet::deleteElement(const AABB& aabb)

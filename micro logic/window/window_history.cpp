@@ -32,62 +32,82 @@ void Window_History::showUI()
 		ImGuiSelectableFlags_DontClosePopups;
 
 	auto& main_window = MainWindow::get();
-	auto& ws          = main_window.getCurrentWindowSheet();
 
-	ImGui::TextUnformatted("Histories");
-	ImGui::SameLine();
-	ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 45);
-	if (ImGui::ImageButton(ICON_TRASH_CAN, { 20, 20 }))
-		ws.clearCommand();
+	if (main_window.curr_window_sheet) {
+		auto& ws = main_window.getCurrentWindowSheet();
 
-	if (ImGui::BeginTable("History##Table", 2, table_flags)) {
-		int64_t next_command = ws.curr_command;
+		ImGui::TextUnformatted("Histories");
+		ImGui::SameLine();
+		ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 45);
+		if (ImGui::ImageButton(ICON_TRASH_CAN, { 20, 20 }))
+			ws.clearCommand();
 
-		ImGui::TableSetupColumn("id");
-		ImGui::TableSetupColumn("description");
-		ImGui::TableSetupScrollFreeze(0, 1);
-		ImGui::TableHeadersRow();
+		if (ImGui::BeginTable("History##Table", 3, table_flags)) {
+			int64_t next_command = ws.curr_command;
 
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
+			ImGui::TableSetupColumn("id");
+			ImGui::TableSetupColumn("description");
+			ImGui::TableSetupColumn("saved");
+			ImGui::TableSetupScrollFreeze(0, 1);
+			ImGui::TableHeadersRow();
 
-		for (int64_t i = ws.command_stack.size() - 1; 0 <= i; --i) {
-			auto& cmd = ws.command_stack[i];
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.5f));
 
-			if (i == ws.curr_command)
-				ImGui::PopStyleColor();
+			for (int64_t i = ws.command_stack.size() - 1; 0 <= i; --i) {
+				auto& cmd = ws.command_stack[i];
 
-			ImGui::PushID(i);
-			ImGui::TableNextRow(ImGuiTableRowFlags_None);
+				if (i == ws.curr_command)
+					ImGui::PopStyleColor();
 
-			sprintf_s(buf, 10, "%lld", i);
+				ImGui::TableNextRow(ImGuiTableRowFlags_None);
 
-			ImGui::TableSetColumnIndex(0);
-			if (ImGui::Selectable(buf, i == ws.curr_command, item_flags)) {
-				next_command = i;
+				sprintf_s(buf, 10, "%lld", i);
+				ImGui::TableSetColumnIndex(0);
+				ImGui::PushID(i);
+				if (ImGui::Selectable(buf, i == ws.curr_command, item_flags)) {
+					next_command = i;
+				}
+				ImGui::PopID();
+
+				ImGui::TableSetColumnIndex(1);
+				ImGui::TextUnformatted(cmd->what().c_str());
+
+				if (ws.isCommandInSavedRange(i)) {
+					ImGui::TableSetColumnIndex(2);
+					ImGui::Image(ICON_CHECK, vec2(20, 20));
+				}
 			}
 
+			if (ws.curr_command == -1)
+				ImGui::PopStyleColor();
+
+			ImGui::TableNextRow(ImGuiTableRowFlags_None);
+
+			ImGui::TableSetColumnIndex(0);
+			if (ImGui::Selectable("", ws.curr_command == -1, item_flags))
+				next_command = -1;
+
 			ImGui::TableSetColumnIndex(1);
-			ImGui::TextUnformatted(cmd->what().c_str());
+			ImGui::TextUnformatted("begin");
 
-			ImGui::PopID();
+			if (ws.last_saved_command_min == -1) {
+				ImGui::TableSetColumnIndex(2);
+				ImGui::Image(ICON_CHECK, vec2(20, 20));
+			}
+
+			ImGui::EndTable();
+
+			if (next_command != ws.curr_command)
+				ws.setCurrCommandTo(next_command);
 		}
+	} else {
+		static const char* msg = "there is no window sheet avaliable";
 
-		if (ws.curr_command == -1)
-			ImGui::PopStyleColor();
+		auto size = ImGui::CalcTextSize(msg);
+		auto pos  = ImVec2((content_rect.width - size.x) / 2.f, (content_rect.height + size.y) / 2.f);
 
-		ImGui::TableNextRow(ImGuiTableRowFlags_None);
-
-		ImGui::TableSetColumnIndex(0);
-		if (ImGui::Selectable("", ws.curr_command == -1, item_flags))
-			next_command = -1;
-
-		ImGui::TableSetColumnIndex(1);
-		ImGui::TextUnformatted("begin");
-
-		ImGui::EndTable();
-
-		while (next_command > ws.curr_command) ws.redo();
-		while (next_command < ws.curr_command) ws.undo();
+		ImGui::SetCursorPos(pos);
+		ImGui::TextUnformatted(msg);
 	}
 
 	DockingWindow::endDockWindow();

@@ -29,7 +29,8 @@ public:
 	void showUI();
 	void EventProc(const vk2d::Event& e, float dt) override;
 
-	void saveSheet(const std::string& dir);
+	bool isCommandInSavedRange(int64_t cmd_idx) const;
+	void sheetSaved();
 
 	void bindSchematicSheet(SchematicSheet& sheet);
 
@@ -40,7 +41,8 @@ public:
 	void addToHoverList(bvh_iterator_t iter, const AABB& aabb);
 	void clearHoverList();
 
-	void pushCommand(std::unique_ptr<Command>&& command, bool skip_redo = false);
+	void pushCommand(std::unique_ptr<Command>&& cmd, bool skip_redo = false);
+	void setCurrCommandTo(int64_t next_cmd);
 	void redo();
 	void undo();
 	bool isRedoable() const;
@@ -79,7 +81,8 @@ public:
 
 	std::vector<std::unique_ptr<Command>> command_stack;
 	int64_t                               curr_command;
-	int64_t                               last_saved_command;
+	int64_t                               last_saved_command_min;
+	int64_t                               last_saved_command_max;
 
 	std::vector<bvh_iterator_t> hover_list;
 
@@ -92,6 +95,4 @@ public:
 	bool capturing_mouse;
 	bool update_grid;
 	bool close_window;
-
-	bool file_saved;
 };

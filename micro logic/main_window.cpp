@@ -28,6 +28,8 @@
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #define IMGUI_NO_LABEL "##" STRINGIZE(__COUNTER__)
 
+#define RESOURCE_DIR_NAME "resources\\"
+
 using vk2d::MessageBox;
 using vk2d::DialogResult;
 
@@ -83,7 +85,7 @@ static std::string to_unicode(const std::wstring& wstr) {
 static std::wstring to_wide(const std::string& str) {
 	std::wstring wstr;
 	size_t size;
-	wstr.resize(str.length() / 2);
+	wstr.resize(str.length() + 1);
 	auto res = mbstowcs_s(&size, &wstr[0], wstr.size(), str.c_str(), _TRUNCATE);
 	assert(!res);
 	wstr.resize(size - 1);
@@ -122,23 +124,23 @@ MainWindow::MainWindow() :
 		font.getGlyph('o', 100, true);
 	}
 	{ // load side menus
-		side_menus.emplace_back(std::make_unique<Menu_Info>(0));
-		side_menus.emplace_back(std::make_unique<Menu_Zoom>(1));
-		side_menus.emplace_back(std::make_unique<Menu_Select>(2));
-		side_menus.emplace_back(std::make_unique<Menu_Library>(3));
-		side_menus.emplace_back(std::make_unique<Menu_Unit>(4));
-		side_menus.emplace_back(std::make_unique<Menu_Shapes>(5));
-		side_menus.emplace_back(std::make_unique<Menu_Label>(6));
-		side_menus.emplace_back(std::make_unique<Menu_Copy>(7));
-		side_menus.emplace_back(std::make_unique<Menu_Cut>(8));
-		side_menus.emplace_back(std::make_unique<Menu_Delete>(9));
-		side_menus.emplace_back(std::make_unique<Menu_Wire>(10));
-		side_menus.emplace_back(std::make_unique<Menu_Net>(11));
-		side_menus.emplace_back(std::make_unique<Menu_SplitWire>(12));
+		side_menus.emplace_back(std::make_unique<Menu_Info>());
+		side_menus.emplace_back(std::make_unique<Menu_Zoom>());
+		side_menus.emplace_back(std::make_unique<Menu_Select>());
+		side_menus.emplace_back(std::make_unique<Menu_Library>());
+		side_menus.emplace_back(std::make_unique<Menu_Unit>());
+		side_menus.emplace_back(std::make_unique<Menu_Shapes>());
+		side_menus.emplace_back(std::make_unique<Menu_Label>());
+		side_menus.emplace_back(std::make_unique<Menu_Copy>());
+		side_menus.emplace_back(std::make_unique<Menu_Cut>());
+		side_menus.emplace_back(std::make_unique<Menu_Delete>());
+		side_menus.emplace_back(std::make_unique<Menu_Wire>());
+		side_menus.emplace_back(std::make_unique<Menu_Net>());
+		side_menus.emplace_back(std::make_unique<Menu_SplitWire>());
 	}
 	{ // load textures
 		vk2d::Image icon_image;
-		icon_image.loadFromFile("resources/icons.png");
+		icon_image.loadFromFile(RESOURCE_DIR_NAME"icons.png");
 
 		textures.emplace_back(icon_image);
 		textures.emplace_back(font.getTexture(100));
@@ -146,7 +148,7 @@ MainWindow::MainWindow() :
 	{ // load circuit elements
 		CircuitElementLoader loader;
 
-		loader.load("resources/elements.xml", font);
+		loader.load(RESOURCE_DIR_NAME"elements.xml", font);
 
 		logic_gates.swap(loader.logic_gates);
 		logic_units.swap(loader.logic_units);
@@ -163,9 +165,10 @@ MainWindow::MainWindow() :
 	close_window         = false;
 
 	initializeProject();
+	ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
 
 	{
-		openProject("C:\\Users\\j0994\\OneDrive\\¹ÙÅÁ È­¸é\\Untitled0");
+		// openProject("C:\\Users\\j0994\\OneDrive\\¹ÙÅÁ È­¸é\\Untitled0");
 		//sheets.resize(2);
 		//sheets[0].name = "Sheet0";
 		//sheets[0].guid = create_guid();
@@ -193,9 +196,10 @@ void MainWindow::initializeProject()
 
 	project_dir          = "";
 	project_name         = "";
-	curr_menu            = -1;
-	curr_menu_hover      = -1;
-	curr_window_sheet    = -1;
+	project_ini_name     = "";
+	curr_menu            = nullptr;
+	curr_menu_hover      = nullptr;
+	curr_window_sheet    = nullptr;
 	project_saved        = false;
 	last_time            = clock_t::now();
 
@@ -230,8 +234,8 @@ void MainWindow::initializeProject()
 		style.Colors[ImGuiCol_Button]             = ImVec4(0.f, 0.f, 0.f, 0.f);
 		style.Colors[ImGuiCol_ButtonHovered]      = ImVec4(0.5f, 0.5f, 0.5f, 1.f);
 		style.Colors[ImGuiCol_ButtonActive]       = ImVec4(1.f, 1.f, 1.f, 1.f);
-		style.Colors[ImGuiCol_HeaderActive]       = ImVec4(0.5f, 0.5f, 0.5f, 1.f);
-		style.Colors[ImGuiCol_HeaderHovered]      = ImVec4(0.5f, 0.5f, 0.5f, 1.f);
+		style.Colors[ImGuiCol_HeaderActive]       = ImVec4(1.f, 1.f, 1.f, 0.3f);
+		style.Colors[ImGuiCol_HeaderHovered]      = ImVec4(1.f, 1.f, 1.f, 0.2f);
 		style.Colors[ImGuiCol_SliderGrabActive]   = ImVec4(0.2f, 0.2f, 0.8f, 1.f);
 		style.Colors[ImGuiCol_SliderGrab]         = ImVec4(1.f, 1.f, 1.f, 1.f);
 
@@ -240,8 +244,10 @@ void MainWindow::initializeProject()
 
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.ConfigViewportsNoAutoMerge = true;
+
+		io.ConfigViewportsNoAutoMerge      = true;
 		io.ConfigDockingTransparentPayload = true;
+		io.IniFilename                     = nullptr;
 	}
 
 	initialized = true;
@@ -251,29 +257,13 @@ void MainWindow::closeProject()
 {
 	assert(initialized);
 
-	if (hasUnsaved()) {
-		MessageBox msg_box;
-
-		msg_box.title   = to_wide("closing project " + project_name);
-		msg_box.msg     = to_wide("current project not saved, save?");
-		msg_box.buttons = MessageBox::Yes_No_Cancel;
-		
-		auto result = msg_box.showDialog();
-		
-		if (result == DialogResult::Yes)
-			saveProjectDialog();
-		else if (result == DialogResult::No)
-			close_window = true;
-		else
-			return;
-	}
-
+	if (!project_ini_name.empty())
+		saveProjectIni();
 	ImGui::VK2D::ShutDown(window);
 
 	project_dir  = "";
 	project_name = "";
 	sheets.clear();
-	sheet_thumbnails.clear();
 	window_sheets.clear();
 
 	initialized = false;
@@ -289,6 +279,7 @@ void MainWindow::show()
 			eventProc(e, dt);
 
 		if (close_window) {
+			closeProject();
 			window.close();
 			break;
 		}
@@ -304,15 +295,6 @@ void MainWindow::show()
 	}
 }
 
-void MainWindow::closeWindow()
-{
-	closeProject();
-
-	if (initialized) return;
-
-	close_window = true;
-}
-
 void MainWindow::loop(float dt)
 {
 	ImGui::VK2D::Update(window, dt);
@@ -325,27 +307,30 @@ void MainWindow::loop(float dt)
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.f, 0.f, 0.f, 0.f));
 	ImGui::SetNextWindowBgAlpha(0.f);
 	{ // setup docks
-		auto flags = ImGuiDockNodeFlags_PassthruCentralNode;// ImGuiDockNodeFlags_AutoHideTabBar;
+		auto flags = ImGuiDockNodeFlags_PassthruCentralNode;
 		ImGui::DockSpaceOverViewport(nullptr, flags);
 	}
 	ImGui::PopStyleColor();
 
 	auto& platform_io = ImGui::GetPlatformIO();
 
-	if (curr_menu != -1 && curr_window_sheet != -1)
+	if (curr_menu && curr_window_sheet)
 		if (getCurrentWindowSheet().window)
 			getCurrentSideMenu().loop();
 
+	closeUnvisibleWindowSheet();
 	for (auto& ws : window_sheets) {
-		ws.showUI();
-		ws.draw();
+		ws->showUI();
+		ws->draw();
 	}
 
-	getCurrentWindowSheet().clearHoverList();
+	if (curr_window_sheet)
+		getCurrentWindowSheet().clearHoverList();
 
 	window_settings.showUI();
 	window_library.showUI();
 	window_history.showUI();
+	window_explorer.showUI();
 
 	if (settings.debug.show_imgui_demo)
 		ImGui::ShowDemoWindow(&settings.debug.show_imgui_demo);
@@ -368,6 +353,9 @@ void MainWindow::loop(float dt)
 	//window.draw(view);
 
 	ImGui::VK2D::DisplayViewports(window, true);
+
+	if (io.WantSaveIniSettings && !project_ini_name.empty())
+		saveProjectIni();
 }
 
 void MainWindow::eventProc(const vk2d::Event& e, float dt)
@@ -379,14 +367,37 @@ void MainWindow::eventProc(const vk2d::Event& e, float dt)
 
 	switch (e.type) {
 	case Event::Close:
-		closeWindow();
+		closeWindowDialog();
 		break;
 	case Event::Resize:
 		break;
 	}
 
-	if (curr_menu != -1)
+	if (curr_menu && curr_window_sheet)
 		getCurrentSideMenu().eventProc(e, dt);
+}
+
+void MainWindow::closeWindowDialog()
+{
+	if (hasUnsavedSchematicSheet() || !project_saved) {
+		MessageBox msg_box;
+
+		msg_box.title = to_wide("closing project " + project_name);
+		msg_box.msg = to_wide("current project not saved, save?");
+		msg_box.buttons = MessageBox::Yes_No_Cancel;
+
+		auto result = msg_box.showDialog();
+
+		if (result == DialogResult::Yes) {
+			if (!isProjectOpened())
+				saveProjectDialog();
+			saveProject();
+		}
+		else if (result == DialogResult::Cancel)
+			return;
+	}
+
+	close_window = true;
 }
 
 void MainWindow::openProjectDialog()
@@ -417,8 +428,8 @@ void MainWindow::openProject(const std::string& dir)
 	namespace fs = std::filesystem;
 	using vk2d::MessageBox;
 
-	std::vector<SchematicSheet_t> new_sheets;
-	std::vector<Window_Sheet>     new_window_sheets;
+	std::vector<SchematicSheetPtr_t> new_sheets;
+	std::vector<Window_SheetPtr_t>   new_window_sheets;
 
 	auto new_project_name  = to_unicode(fs::path(dir).filename());
 	auto project_file_name = dir + "\\" + new_project_name + ".mlp";
@@ -447,13 +458,7 @@ void MainWindow::openProject(const std::string& dir)
 
 			auto& sheet = new_sheets.emplace_back(std::make_unique<SchematicSheet>());
 			sheet->unserialize(file);
-
-			auto& ws = new_window_sheets.emplace_back();
-			ws.bindSchematicSheet(*sheet);
-			ws.show               = true;
-			ws.name               = sheet->name;
-			ws.file_saved         = true;
-			ws.last_saved_command = -1;
+			updateThumbnail(*sheet);
 
 			if (elem->Attribute("guid") != sheet->guid) {
 				vk2d::MessageBox msg_box;
@@ -466,23 +471,24 @@ void MainWindow::openProject(const std::string& dir)
 			}
 		}
 	}
-	{
-		auto elem = root->FirstChildElement("UISettings");
-		ImGui::LoadIniSettingsFromMemory(elem->GetText());
-	}
 
 	if (initialized) 
 		closeProject();
 	initializeProject();
 
-	project_dir  = dir;
-	project_name = new_project_name;
+	project_dir      = dir;
+	project_name     = new_project_name;
+	project_ini_name = project_dir + "\\" + project_name + ".ini";
 	sheets.swap(new_sheets);
 	window_sheets.swap(new_window_sheets);
 	project_saved = true;
+
+	loadProjectIni();
+
+	postInfoMessage("Project " + project_name + " Opened");
 }
 
-void MainWindow::saveProjectDialog()
+bool MainWindow::saveProjectDialog()
 {
 	namespace fs = std::filesystem;
 
@@ -494,16 +500,19 @@ void MainWindow::saveProjectDialog()
 	dialog.default_name = L"";
 	dialog.check_empty  = true;
 	
-	if (dialog.showDialog() != vk2d::DialogResult::OK) return;
+	if (dialog.showDialog() != vk2d::DialogResult::OK) return false;
 
-	project_dir  = to_unicode(dialog.getResultDir());
-	project_name = to_unicode(fs::path(project_dir).filename());
+	project_dir      = to_unicode(dialog.getResultDir());
+	project_name     = to_unicode(fs::path(project_dir).filename());
+	project_ini_name = project_dir + "\\" + project_name + ".ini";
 
-	saveProject();
+	return true;
 }
 
 void MainWindow::saveProject()
 {
+	assert(isProjectOpened());
+
 	tinyxml2::XMLDocument doc;
 
 	auto* root = doc.NewElement("Project");
@@ -517,131 +526,161 @@ void MainWindow::saveProject()
 		elem->SetAttribute("name", sheet->name.c_str());
 		elem->SetAttribute("path", file_name.c_str());
 		elem->SetAttribute("guid", sheet->guid.c_str());
-	}
-	for (auto& ws : window_sheets) {
-		ws.saveSheet(project_dir);
-	}
-	{
-		auto* elem = root->InsertNewChildElement("UISettings");
-		elem->SetText(ImGui::SaveIniSettingsToMemory());
+
+		if (!sheet->file_saved)
+			saveSchematicSheet(*sheet);
 	}
 	doc.SaveFile((project_dir + "\\" + project_name + ".mlp").c_str());
+
+	saveProjectIni();
+
+	project_saved = true;
+
+	postInfoMessage("Project Saved");
 }
 
-bool MainWindow::hasUnsaved() const
+void MainWindow::loadProjectIni()
 {
-	for (auto& ws : window_sheets)
-		if (!ws.file_saved) return true;
-	return false;
+	assert(!project_ini_name.empty());
+
+	tinyxml2::XMLDocument doc;
+
+	doc.LoadFile(project_ini_name.c_str());
+	auto* root = doc.FirstChildElement("ProjectInitialization");
+
+	{
+		auto* elem = root->FirstChildElement("ImGui");
+		ImGui::LoadIniSettingsFromMemory(elem->GetText());
+	}
+}
+
+void MainWindow::saveProjectIni()
+{
+	assert(!project_ini_name.empty());
+
+	tinyxml2::XMLDocument doc;
+
+	auto* root = doc.NewElement("ProjectInitialization");
+	doc.InsertFirstChild(root);
+	
+	{
+		auto* elem = root->InsertNewChildElement("ImGui");
+		elem->SetText(ImGui::SaveIniSettingsToMemory());
+	};
+
+	doc.SaveFile(project_ini_name.c_str());
+}
+
+bool MainWindow::trySaveProject()
+{
+	if (!isProjectOpened())
+		if (!saveProjectDialog())
+			return false;
+
+	saveProject();
+	return true;
+}
+
+bool MainWindow::isProjectOpened() const
+{
+	return !project_dir.empty();
 }
 
 SideMenu& MainWindow::getCurrentSideMenu()
 {
-	return *side_menus[curr_menu];
+	return *curr_menu;
 }
 
-void MainWindow::setCurrentSideMenu(int32_t menu_idx)
+void MainWindow::setCurrentSideMenu(SideMenu* menu)
 {
-	auto last_menu = curr_menu;
-	curr_menu      = menu_idx;
+	if (curr_menu == menu) return;
 
-	if (last_menu != curr_menu) {
-		if (last_menu != -1)
-			side_menus[last_menu]->onClose();
-		if (curr_menu != -1)
-			side_menus[curr_menu]->onBegin();
-	}
+	if (curr_window_sheet && curr_menu)
+		curr_menu->onClose();
+
+	curr_menu = menu;
+
+	if (curr_window_sheet && curr_menu)
+		curr_menu->onBegin();
 }
 
-void MainWindow::setCurrentSideMenu(const SideMenu& menu)
+void MainWindow::addSchematicSheet()
 {
-	setCurrentSideMenu(menu.menu_idx);
+	bool        found;
+	int32_t     num = -1;
+	std::string name;
+
+	do {
+		found = false;
+		name  = "Sheet" + std::to_string(++num);
+
+		for (auto& sheet : sheets) {
+			if (sheet->name == name) {
+				found = true;
+				break;
+			}
+		}
+	} while (found);
+
+	auto& sheet = sheets.emplace_back(std::make_unique<SchematicSheet>());
+
+	sheet->guid      = create_guid();
+	sheet->name      = name;
+	updateThumbnail(*sheet);
+
+	project_saved = false;
 }
 
-Window_Sheet& MainWindow::getCurrentWindowSheet()
+bool MainWindow::saveSchematicSheet(SchematicSheet& sheet)
 {
-	return window_sheets[curr_window_sheet];
-}
+	if (!isProjectOpened())
+		if (!saveProjectDialog()) 
+			return false;
 
-void MainWindow::setCurrentWindowSheet(const Window_Sheet& window_sheet)
-{
-	for (size_t i = 0; i < window_sheets.size(); ++i) {
-		if (&window_sheets[i] == &window_sheet) {
-			curr_window_sheet = i;
+	for (auto& ws : window_sheets) {
+		if (ws->sheet == &sheet) {
+			ws->sheetSaved();
 			break;
 		}
 	}
+
+	std::ofstream of(project_dir + "\\" + sheet.name + ".mls");
+	sheet.serialize(of);
+	sheet.file_saved = true;
+
+	postInfoMessage("Sheet " + sheet.name + " Saved");
+	return true;
 }
 
-void MainWindow::setStatusMessage(const std::string& str)
+void MainWindow::deleteSchematicSheet(SchematicSheet& sheet)
 {
-	status_message = str;
 }
 
-void MainWindow::setInfoMessage(const std::string& str)
+bool MainWindow::hasUnsavedSchematicSheet() const
 {
-	info_message = str;
+	for (auto& sheet : sheets)
+		if (!sheet->file_saved)
+			return true;
+	return false;
 }
 
-void MainWindow::redo()
+void MainWindow::updateThumbnail(SchematicSheet& sheet)
 {
-	getCurrentWindowSheet().redo();
-}
+	vk2d::DrawList draw_list;
 
-void MainWindow::undo()
-{
-	getCurrentWindowSheet().undo();
-}
-
-bool MainWindow::isRedoable()
-{
-	if (curr_window_sheet == -1) return false;
-	return getCurrentWindowSheet().isRedoable();
-}
-
-bool MainWindow::isUndoable()
-{
-	if (curr_window_sheet == -1) return false;
-	return getCurrentWindowSheet().isUndoable();
-}
-
-void MainWindow::beginClipboardPaste()
-{
-	if (!vk2d::Clipboard::available()) return;
-
-	std::stringstream ss(Base64::decode(vk2d::Clipboard::getString()));
-
-	if (ss.str().size() < 38) return;
-
-	std::string guid;
-	guid.resize(39);
-
-	ss.read(guid.data(), 38);
-
-	if (guid == CLIPBOARD_COPY_IDENTIFICATION) {
-		auto& menu = dynamic_cast<Menu_Copy&>(*side_menus[7]);
-		menu.beginClipboardPaste(ss);
-	} else if (guid == CLIPBOARD_CUT_IDENTIFICATION) {
-		auto& menu = dynamic_cast<Menu_Cut&>(*side_menus[8]);
-		menu.beginClipboardPaste(ss);
-	}
-}
-
-vk2d::Texture MainWindow::createThumbnail(const SchematicSheet& sheet) const
-{
 	vk2d::RenderTexture texture(720, 480);
-
-	texture.setClearColor(vk2d::Colors::Black);
 	
 	if (!sheet.bvh.empty()) {
-		vk2d::DrawList draw_list;
 		AABB aabb = sheet.bvh.begin()->second->getAABB();
 
 		for (auto& [elem_aabb, elem] : sheet.bvh)
 			aabb = aabb.union_of(elem_aabb);
 
+		auto scale_x = texture.size().x / aabb.width();
+		auto scale_y = texture.size().y / aabb.height();
+
 		auto position        = aabb.center();
-		auto grid_pixel_size = texture.size().x / aabb.width();
+		auto grid_pixel_size = 0.9f * std::min(scale_x, scale_y);
 		auto transform       = vk2d::Transform().
 			translate(texture.size() / 2.f - position * grid_pixel_size).
 			scale(grid_pixel_size);
@@ -663,7 +702,131 @@ vk2d::Texture MainWindow::createThumbnail(const SchematicSheet& sheet) const
 	}
 
 	texture.display();
-	return texture.release();
+
+	sheet.thumbnail = texture.release();
+}
+
+bool MainWindow::openWindowSheet(SchematicSheet& sheet)
+{
+	for (auto& ws : window_sheets) {
+		if (ws->sheet == &sheet) {
+			auto* window = ImGui::FindWindowByName(ws->name.c_str());
+			window->DockNode->TabBar->NextSelectedTabId = window->ID;;
+			return true;
+		}
+	}
+
+	auto& ws = window_sheets.emplace_back(std::make_unique<Window_Sheet>());
+	ws->bindSchematicSheet(sheet);
+
+	auto& dc = ImGui::GetCurrentContext()->DockContext;
+	for (int i = 0; i < dc.Nodes.Data.Size; ++i) {
+		if (auto* node = (ImGuiDockNode*)dc.Nodes.Data[i].val_p) {
+			ImGuiID id = ImGui::DockBuilderGetCentralNode(node->ID)->ID;
+			ImGui::DockBuilderDockWindow(ws->name.c_str(), id);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void MainWindow::closeUnvisibleWindowSheet()
+{
+	auto iter = window_sheets.begin();
+	for (; iter != window_sheets.end(); ++iter) {
+		if (!(*iter)->show) {
+			if (curr_window_sheet == iter->get())
+				curr_window_sheet = nullptr;
+
+			window_sheets.erase(iter);
+			
+			return;
+		}
+	}
+}
+
+Window_Sheet& MainWindow::getCurrentWindowSheet()
+{
+	return *curr_window_sheet;
+}
+
+void MainWindow::setCurrentWindowSheet(Window_Sheet* window_sheet)
+{
+	if (curr_window_sheet == window_sheet) return;
+
+	if (curr_window_sheet && curr_menu)
+		curr_menu->onClose();
+
+	curr_window_sheet = window_sheet;
+
+	if (curr_window_sheet && curr_menu)
+		curr_menu->onBegin();
+}
+
+void MainWindow::postStatusMessage(const std::string& str)
+{
+	status_message = str;
+}
+
+void MainWindow::postInfoMessage(const std::string& str, bool force)
+{
+	if (!force && !infoMessageTimeout()) return;
+
+	info_message_last_time = clock_t::now();
+	info_message           = str;
+}
+
+bool MainWindow::infoMessageTimeout() const
+{
+	using namespace std::chrono;
+
+	auto time = duration_cast<milliseconds>(clock_t::now() - info_message_last_time).count();
+	return time > 3000;
+}
+
+void MainWindow::redo()
+{
+	getCurrentWindowSheet().redo();
+}
+
+void MainWindow::undo()
+{
+	getCurrentWindowSheet().undo();
+}
+
+bool MainWindow::isRedoable()
+{
+	if (!curr_window_sheet) return false;
+	return getCurrentWindowSheet().isRedoable();
+}
+
+bool MainWindow::isUndoable()
+{
+	if (!curr_window_sheet) return false;
+	return getCurrentWindowSheet().isUndoable();
+}
+
+void MainWindow::beginClipboardPaste()
+{
+	if (!vk2d::Clipboard::available()) return;
+
+	std::stringstream ss(Base64::decode(vk2d::Clipboard::getString()));
+
+	if (ss.str().size() < 38) return;
+
+	std::string guid;
+	guid.resize(39);
+
+	ss.read(guid.data(), 38);
+
+	if (guid == CLIPBOARD_COPY_IDENTIFICATION) {
+		auto* menu = findSideMenu<Menu_Copy>();
+		menu->beginClipboardPaste(ss);
+	} else if (guid == CLIPBOARD_CUT_IDENTIFICATION) {
+		auto* menu = findSideMenu<Menu_Cut>();
+		menu->beginClipboardPaste(ss);
+	}
 }
 
 float MainWindow::getDeltaTime()
@@ -715,22 +878,41 @@ void MainWindow::showMainMenus()
 			ImGui::Image(ICON_SAVE, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("Save")) {
-				if (project_dir.empty())
-					saveProjectDialog();
-				else
-					saveProject();
+				trySaveProject();
+			}
+
+			ImGui::Image(ICON_SAVE_ALL, icon_size);
+			ImGui::SameLine();
+			if (ImGui::MenuItem("Save All")) {
+				trySaveProject();
 			}
 
 			ImGui::SetCursorPosX(spacing);
-			if (ImGui::MenuItem("Save As..."))
+			if (ImGui::MenuItem("Save As...")) {
 				saveProjectDialog();
+				saveProject();
+			}
 
 			ImGui::Separator();
+
+			ImGui::Image(ICON_IMPORT, icon_size);
+			ImGui::SameLine();
+			if (ImGui::MenuItem("Import Sheet")) {
+				trySaveProject();
+			}
+
+			ImGui::Image(ICON_EXPORT, icon_size);
+			ImGui::SameLine();
+			if (ImGui::MenuItem("Export Sheet")) {
+				trySaveProject();
+			}
 			
+			ImGui::Separator();
+
 			ImGui::Image(ICON_EXIT, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("Exit")) {
-				closeWindow();
+				closeWindowDialog();
 			}
 			ImGui::EndMenu();
 		}
@@ -776,13 +958,20 @@ void MainWindow::showMainMenus()
 				window_history.show = true;
 			}
 
+			ImGui::SetCursorPosX(spacing);
+			if (ImGui::MenuItem("Browse")) {
+				window_explorer.show = true;
+			}
+
 			ImGui::Separator();
 
 			ImGui::SetCursorPosX(spacing);
 			ImGui::MenuItem("Grid", nullptr, &settings.view.grid);
 
+			ImGui::Separator();
+			
 			ImGui::SetCursorPosX(spacing);
-			if (ImGui::MenuItem("reset view", nullptr, nullptr, curr_window_sheet != -1)) {
+			if (ImGui::MenuItem("reset view", nullptr, nullptr, curr_window_sheet)) {
 				auto& window_sheet = getCurrentWindowSheet();
 				window_sheet.setPosition({ 0.f, 0.f });
 				window_sheet.setScale(1.f);
@@ -820,7 +1009,12 @@ void MainWindow::showMainMenus()
 		}
 
 		ImGui::Separator();
-		ImGui::TextUnformatted(project_name.c_str());
+		if (project_saved)
+			ImGui::TextUnformatted(project_name.c_str());
+		else if (!project_name.empty())
+			ImGui::TextUnformatted(("*" + project_name).c_str());
+		else 
+			ImGui::TextUnformatted("*Untitled");
 
 		showTitleButtons();
 		ImGui::EndMainMenuBar();
@@ -850,19 +1044,20 @@ void MainWindow::showUpperMenus()
 			auto redo_tint = isRedoable() ? vk2d::Colors::White : vk2d::Colors::Gray;
 			if (ImGui::ImageButton(ICON_REDO, icon_size, vk2d::Colors::Transparent, redo_tint)) redo();
 
-			if (ImGui::ImageButton(ICON_SAVE, icon_size)) {
-				if (project_dir.empty())
-					saveProjectDialog();
-				else
-					saveProject();
-			}
+			auto save_tint = curr_window_sheet ? vk2d::Colors::White : vk2d::Colors::Gray;
+			if (ImGui::ImageButton(ICON_SAVE, icon_size, vk2d::Colors::Transparent, save_tint))
+				if (curr_window_sheet)
+					saveSchematicSheet(*curr_window_sheet->sheet);
+			
+			if (ImGui::ImageButton(ICON_SAVE_ALL, icon_size))
+				trySaveProject();
 
 			ImGui::PopStyleVar();
 
 			ImGui::Separator();
 
-			if (curr_menu != -1)
-				side_menus[curr_menu]->upperMenu();
+			if (curr_menu) 
+				curr_menu->upperMenu();
 
 			ImGui::EndMenuBar();
 		}
@@ -887,12 +1082,15 @@ void MainWindow::showStatusBar()
 			ImGui::SetCursorPosX(height * 0.25f);
 			ImGui::ImageButton(ICON_MESSAGE, { 23, 23 });
 
-			if (!status_message.empty()) {
-				ImGui::TextUnformatted(info_message.c_str());
-				info_message.clear();
-			} else if (curr_menu_hover != -1) {
-				ImGui::TextUnformatted(side_menus[curr_menu_hover]->menu_name);
-			} else if (curr_window_sheet != -1) {
+			if (!info_message.empty()) {
+				ImGui::TextUnformatted(info_message.c_str());				
+				if (infoMessageTimeout())
+					info_message.clear();
+			} else if (!status_message.empty()) {
+				ImGui::TextUnformatted(status_message.c_str());
+			} else if (curr_menu_hover) {
+				ImGui::TextUnformatted(curr_menu_hover->menu_name);
+			} else if (curr_window_sheet) {
 				auto& ws = getCurrentWindowSheet();
 
 				if (ws.capturing_mouse) {
@@ -901,7 +1099,7 @@ void MainWindow::showStatusBar()
 				}
 			}
 
-			if (curr_window_sheet != -1) {
+			if (curr_window_sheet) {
 				auto& ws = getCurrentWindowSheet();
 
 				ImGui::SetCursorPosX(ImGui::GetWindowWidth() -  400);
@@ -930,13 +1128,13 @@ void MainWindow::showSideMenus()
 {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings;
 	if (ImGui::BeginViewportSideBar("##SideBar", nullptr, ImGuiDir_Left, 60, window_flags)) {
-		curr_menu_hover = -1;
+		curr_menu_hover = nullptr;
 
-		for (int i = 0; i < side_menus.size(); ++i) {
-			side_menus[i]->menuButton();
+		for (auto& menu : side_menus) {
+			menu->menuButton();
 
 			if (ImGui::IsItemHovered())
-				curr_menu_hover = i;
+				curr_menu_hover = menu.get();
 		}
 
 		ImGui::End();

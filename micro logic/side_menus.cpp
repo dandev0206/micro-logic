@@ -27,8 +27,25 @@ static AABB point_to_AABB(const vec2& p) {
 	return { p - padding, p + padding };
 }
 
-Menu_Info::Menu_Info(uint32_t menu_idx) :
-	SideMenu("Info", menu_idx)
+void SideMenu::menuButtonImpl(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec2& size)
+{
+	auto& main_window = MainWindow::get();
+
+	auto bgColor = 
+		main_window.curr_menu == this ?
+		vk2d::Colors::Gray :
+		vk2d::Colors::Transparent;
+
+	if (ImGui::ImageButton(texture, rect, size, bgColor)) {
+		if (main_window.curr_menu == this)
+			main_window.setCurrentSideMenu(nullptr);
+		else
+			main_window.setCurrentSideMenu(this);
+	}
+}
+
+Menu_Info::Menu_Info() :
+	SideMenu("Info")
 {}
 
 void Menu_Info::loop()
@@ -42,14 +59,11 @@ void Menu_Info::eventProc(const vk2d::Event& e, float dt)
 void Menu_Info::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_INFORMATION, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_INFORMATION, { 40, 40 });
 }
 
-Menu_Zoom::Menu_Zoom(uint32_t menu_idx) :
-	SideMenu("Zoom", menu_idx)
+Menu_Zoom::Menu_Zoom() :
+	SideMenu("Zoom")
 {}
 
 void Menu_Zoom::loop()
@@ -102,10 +116,7 @@ void Menu_Zoom::eventProc(const vk2d::Event& e, float dt)
 void Menu_Zoom::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_MAG_GLASS, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_MAG_GLASS, { 40, 40 });
 }
 
 void Menu_Zoom::upperMenu()
@@ -124,8 +135,8 @@ void Menu_Zoom::upperMenu()
 	ImGui::RadioImageButton(ICON_MAG_RANGE, { 35, 35 }, &curr_zoom_type, 2);
 }
 
-SelectingSideMenu::SelectingSideMenu(const char* menu_name, uint32_t menu_idx) :
-	SideMenu(menu_name, menu_idx),
+SelectingSideMenu::SelectingSideMenu(const char* menu_name) :
+	SideMenu(menu_name),
 	is_working(false),
 	blocked(false),
 	start_pos(),
@@ -350,9 +361,10 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 		}
 	}
 
-	if (!cmd_group->empty())
+	if (!cmd_group->empty()) {
+		cmd_group->modifying = false;
 		ws.pushCommand(std::move(cmd_group));
-
+	}
 	return selected;
 }
 
@@ -373,8 +385,8 @@ bool SelectingSideMenu::checkBlocked(const AABB& aabb) const
 	});
 }
 
-Menu_Select::Menu_Select(uint32_t menu_idx) :
-	SelectingSideMenu("Select", menu_idx)
+Menu_Select::Menu_Select() :
+	SelectingSideMenu("Select")
 {}
 
 void Menu_Select::loop()
@@ -385,10 +397,7 @@ void Menu_Select::loop()
 void Menu_Select::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_ARROW_POINTER, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_ARROW_POINTER, { 40, 40 });
 }
 
 void Menu_Select::onClose()
@@ -461,8 +470,8 @@ void Menu_Select::loopWork()
 	last_dir = Direction::Up;
 }
 
-Menu_Library::Menu_Library(uint32_t menu_idx) :
-	SideMenu("Library", menu_idx),
+Menu_Library::Menu_Library() :
+	SideMenu("Library"),
 	curr_gate(-1),
 	curr_dir(Direction::Up)
 {}
@@ -528,10 +537,7 @@ void Menu_Library::eventProc(const vk2d::Event& e, float dt)
 void Menu_Library::menuButton()
 {
 	auto& main_window = MainWindow::get();
-
-	int32_t curr_menu = main_window.curr_menu;
-	if (ImGui::ToggleImageButton(ICON_LIBRARY, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_LIBRARY, { 40, 40 });
 }
 
 void Menu_Library::upperMenu()
@@ -562,8 +568,8 @@ void Menu_Library::upperMenu()
 	ImGui::RadioImageButton(ICON_DIR_LEFT, { 35, 35 }, (int*)&curr_dir, 3);
 }
 
-Menu_Unit::Menu_Unit(uint32_t menu_idx) :
-	SideMenu("Unit", menu_idx)
+Menu_Unit::Menu_Unit() :
+	SideMenu("Unit")
 {
 }
 
@@ -574,14 +580,11 @@ void Menu_Unit::loop()
 void Menu_Unit::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_MICROCHIP, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_MICROCHIP, { 40, 40 });
 }
 
-Menu_Shapes::Menu_Shapes(uint32_t menu_idx) :
-	SideMenu("Shapes", menu_idx)
+Menu_Shapes::Menu_Shapes() :
+	SideMenu("Shapes")
 {
 }
 
@@ -592,14 +595,11 @@ void Menu_Shapes::loop()
 void Menu_Shapes::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_SHAPES, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_SHAPES, { 40, 40 });
 }
 
-Menu_Label::Menu_Label(uint32_t menu_idx) :
-	SideMenu("Label", menu_idx)
+Menu_Label::Menu_Label() :
+	SideMenu("Label")
 {
 }
 
@@ -610,16 +610,13 @@ void Menu_Label::loop()
 void Menu_Label::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_LABEL, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_LABEL, { 40, 40 });
 }
 
-Menu_Copy::Menu_Copy(uint32_t menu_idx) :
-	SelectingSideMenu("Copy", menu_idx),
+Menu_Copy::Menu_Copy() :
+	SelectingSideMenu("Copy"),
 	from_clipboard(false),
-	prev_menu(-1)
+	prev_menu(nullptr)
 {}
 
 void Menu_Copy::loop()
@@ -630,10 +627,7 @@ void Menu_Copy::loop()
 void Menu_Copy::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_COPY, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_COPY, { 40, 40 });
 }
 
 void Menu_Copy::onBegin()
@@ -701,11 +695,9 @@ void Menu_Copy::endWork()
 
 	SelectingSideMenu::endWork();
 
-	if (from_clipboard && prev_menu != -1) {
+	if (from_clipboard && prev_menu) {
 		auto& main_window = MainWindow::get();
-
-		auto& menu = *main_window.side_menus[prev_menu];
-		main_window.setCurrentSideMenu(menu);
+		main_window.setCurrentSideMenu(prev_menu);
 	}
 }
 
@@ -765,7 +757,7 @@ void Menu_Copy::beginClipboardPaste(std::istream& is)
 	beginPaste(true);
 
 	prev_menu = main_window.curr_menu;
-	main_window.setCurrentSideMenu(*this);
+	main_window.setCurrentSideMenu(this);
 
 	size_t element_count;
 	vec2   delta;
@@ -782,9 +774,10 @@ void Menu_Copy::beginClipboardPaste(std::istream& is)
 	}
 }
 
-Menu_Cut::Menu_Cut(uint32_t menu_idx) :
-	SelectingSideMenu("Cut", menu_idx),
-	from_clipboard(false)
+Menu_Cut::Menu_Cut() :
+	SelectingSideMenu("Cut"),
+	from_clipboard(false),
+	prev_menu(nullptr)
 {}
 
 void Menu_Cut::loop()
@@ -795,10 +788,7 @@ void Menu_Cut::loop()
 void Menu_Cut::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_CUT, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_CUT, { 40, 40 });
 }
 
 void Menu_Cut::onBegin()
@@ -878,11 +868,9 @@ void Menu_Cut::endWork()
 
 	SelectingSideMenu::endWork();
 
-	if (from_clipboard && prev_menu != -1) {
+	if (from_clipboard && prev_menu) {
 		auto& main_window = MainWindow::get();
-
-		auto& menu = *main_window.side_menus[prev_menu];
-		main_window.setCurrentSideMenu(menu);
+		main_window.setCurrentSideMenu(prev_menu);
 	}
 }
 
@@ -945,7 +933,7 @@ void Menu_Cut::beginClipboardPaste(std::istream& is)
 	beginPaste(true);
 
 	prev_menu = main_window.curr_menu;
-	main_window.setCurrentSideMenu(*this);
+	main_window.setCurrentSideMenu(this);
 
 	size_t element_count;
 	vec2   delta;
@@ -962,8 +950,8 @@ void Menu_Cut::beginClipboardPaste(std::istream& is)
 	}
 }
 
-Menu_Delete::Menu_Delete(uint32_t menu_idx) :
-	SideMenu("Delete", menu_idx)
+Menu_Delete::Menu_Delete() :
+	SideMenu("Delete")
 {
 }
 
@@ -1022,10 +1010,7 @@ void Menu_Delete::eventProc(const vk2d::Event& e, float dt)
 void Menu_Delete::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_TRASH_CAN, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_TRASH_CAN, { 40, 40 });
 }
 
 void Menu_Delete::onBegin()
@@ -1038,27 +1023,12 @@ void Menu_Delete::onBegin()
 	ws.pushCommand(std::move(cmd));
 }
 
-WiringSideMenu::WiringSideMenu(const char* menu_name, uint32_t menu_idx) :
-	SideMenu(menu_name, menu_idx),
+WiringSideMenu::WiringSideMenu(const char* menu_name) :
+	SideMenu(menu_name),
 	curr_wire_type(0),
 	is_wiring(false),
 	start_pos()
 {}
-
-void WiringSideMenu::upperMenu()
-{
-	auto& main_window = MainWindow::get();
-
-	ImGui::RadioImageButton(ICON_WIRE_TYPE0, { 35, 35 }, &curr_wire_type, 0);
-	ImGui::SameLine();
-	ImGui::RadioImageButton(ICON_WIRE_TYPE1, { 35, 35 }, &curr_wire_type, 1);
-	ImGui::SameLine();
-	ImGui::RadioImageButton(ICON_WIRE_TYPE2, { 35, 35 }, &curr_wire_type, 2);
-	ImGui::SameLine();
-	ImGui::RadioImageButton(ICON_WIRE_TYPE3, { 35, 35 }, &curr_wire_type, 3);
-	ImGui::SameLine();
-	ImGui::RadioImageButton(ICON_WIRE_TYPE4, { 35, 35 }, &curr_wire_type, 4);
-}
 
 vec2 WiringSideMenu::getMiddle(const vec2& p0, const vec2& p1) const
 {
@@ -1104,8 +1074,8 @@ bool WiringSideMenu::checkContinueWiring(const vec2& pos) const
 	return !result;
 }
 
-Menu_Wire::Menu_Wire(uint32_t menu_idx) :
-	WiringSideMenu("Wire", menu_idx)
+Menu_Wire::Menu_Wire() :
+	WiringSideMenu("Wire")
 {}
 
 void Menu_Wire::loop()
@@ -1182,10 +1152,22 @@ void Menu_Wire::eventProc(const vk2d::Event& e, float dt)
 void Menu_Wire::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
+	SideMenu::menuButtonImpl(ICON_WIRE, { 40, 40 });
+}
 
-	if (ImGui::ToggleImageButton(ICON_WIRE, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+void Menu_Wire::upperMenu()
+{
+	auto& main_window = MainWindow::get();
+
+	ImGui::RadioImageButton(ICON_WIRE_TYPE0, { 35, 35 }, &curr_wire_type, 0);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_WIRE_TYPE1, { 35, 35 }, &curr_wire_type, 1);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_WIRE_TYPE2, { 35, 35 }, &curr_wire_type, 2);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_WIRE_TYPE3, { 35, 35 }, &curr_wire_type, 3);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_WIRE_TYPE4, { 35, 35 }, &curr_wire_type, 4);
 }
 
 void Menu_Wire::addWires(std::vector<Wire>&& stack)
@@ -1255,8 +1237,8 @@ bool Menu_Wire::checkWireCrossing(const vec2& pos) const
 	return count > 1;
 }
 
-Menu_Net::Menu_Net(uint32_t menu_idx) :
-	WiringSideMenu("Net", menu_idx)
+Menu_Net::Menu_Net() :
+	WiringSideMenu("Net")
 {
 }
 
@@ -1271,14 +1253,26 @@ void Menu_Net::eventProc(const vk2d::Event& e, float dt)
 void Menu_Net::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_NET, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_NET, { 40, 40 });
 }
 
-Menu_SplitWire::Menu_SplitWire(uint32_t menu_idx) :
-	SideMenu("Split Wire", menu_idx)
+void Menu_Net::upperMenu()
+{
+	auto& main_window = MainWindow::get();
+
+	ImGui::RadioImageButton(ICON_NET_TYPE0, { 35, 35 }, &curr_wire_type, 0);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_NET_TYPE1, { 35, 35 }, &curr_wire_type, 1);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_NET_TYPE2, { 35, 35 }, &curr_wire_type, 2);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_NET_TYPE3, { 35, 35 }, &curr_wire_type, 3);
+	ImGui::SameLine();
+	ImGui::RadioImageButton(ICON_NET_TYPE4, { 35, 35 }, &curr_wire_type, 4);
+}
+
+Menu_SplitWire::Menu_SplitWire() :
+	SideMenu("Split Wire")
 {
 }
 
@@ -1293,8 +1287,5 @@ void Menu_SplitWire::eventProc(const vk2d::Event& e, float dt)
 void Menu_SplitWire::menuButton()
 {
 	auto& main_window = MainWindow::get();
-	int32_t curr_menu = main_window.curr_menu;
-
-	if (ImGui::ToggleImageButton(ICON_SPLIT_WIRE, { 40, 40 }, &curr_menu, menu_idx))
-		main_window.setCurrentSideMenu(curr_menu);
+	SideMenu::menuButtonImpl(ICON_SPLIT_WIRE, { 40, 40 });
 }

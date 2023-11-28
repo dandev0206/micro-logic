@@ -1,13 +1,12 @@
 #pragma once
 
 #include <vk2d/system/event.hpp>
+#include <vk2d/graphics/texture.h>
 
 class SideMenu abstract {
 public:
-	SideMenu(const char* menu_name, uint32_t menu_idx) :
-		menu_name(menu_name),
-		menu_idx(menu_idx)
-	{}
+	SideMenu(const char* menu_name) :
+		menu_name(menu_name) {}
 
 	virtual void loop() = 0;
 	virtual void eventProc(const vk2d::Event& e, float dt) {};
@@ -16,6 +15,9 @@ public:
 	virtual void onBegin() {};
 	virtual void onClose() {};
 
+protected:
+	void menuButtonImpl(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec2& size);
+	
+public:
 	const char* menu_name;
-	uint32_t    menu_idx;
 };

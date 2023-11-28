@@ -45,8 +45,8 @@ void Window_Settings::showUI()
 			update_grid |= ImGui::ColorEdit4("axis color##axis_color", &settings.view.grid_axis_color);
 
 			if (update_grid) {
-				for (auto& window_sheet : main_window.window_sheets)
-					window_sheet.update_grid = true;
+				for (auto& ws : main_window.window_sheets)
+					ws->update_grid = true;
 			}
 		}
 

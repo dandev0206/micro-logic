@@ -63,10 +63,7 @@
     <ClCompile Include="window\window_history.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="window\window_browse.h">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="window\window_browse.cpp">
+    <ClCompile Include="window\window_explorer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -145,6 +142,9 @@
     </ClInclude>
     <ClInclude Include="serialize.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="window\window_explorer.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

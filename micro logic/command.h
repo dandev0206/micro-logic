@@ -8,20 +8,25 @@ public:
 	virtual void redo(SchematicSheet& sheet) = 0;
 	virtual void undo(SchematicSheet& sheet) = 0;
 	virtual std::string what() const = 0;
+	virtual bool isModifying() const { return true; }
 };
 
 class CommandGroup : public Command {
 public:
+	CommandGroup();
+
 	void onPush(SchematicSheet& sheet) override;
 	void redo(SchematicSheet& sheet) override;
 	void undo(SchematicSheet& sheet) override;
 	std::string what() const override;
+	bool isModifying() const override;
 
 	void append(std::unique_ptr<Command>&& cmd);
 	bool empty() const;
 
 	std::vector<std::unique_ptr<Command>> commands;
 	std::string                           description;
+	bool                                  modifying;
 };
 
 class Command_Add : public Command {
@@ -42,6 +47,7 @@ public:
 	void redo(SchematicSheet& sheet) override;
 	void undo(SchematicSheet& sheet) override;
 	std::string what() const override;
+	bool isModifying() const override;
 
 private:
 	void sortSelections();
