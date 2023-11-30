@@ -56,7 +56,7 @@ static HRESULT set_filter(IFileDialog* dialog, const FileDialogBase::filter_t& f
 	filter_specs[filters.size()].pszName = L"All files";
 	filter_specs[filters.size()].pszSpec = L"*.*";
 
-	return dialog->SetFileTypes(filter_specs.size(), filter_specs.data());
+	return dialog->SetFileTypes((UINT)filter_specs.size(), filter_specs.data());
 }
 
 HRESULT set_default_dir(IFileDialog* dialog, const wchar_t* default_dir) {
@@ -148,6 +148,16 @@ HRESULT add_options(IFileDialog* dialog, FILEOPENDIALOGOPTIONS new_options) {
 //	}
 //	return hr;
 //}
+
+FileDialogBase::filteritem_t::filteritem_t() :
+	name(nullptr),
+	spec(nullptr)
+{}
+
+FileDialogBase::filteritem_t::filteritem_t(const wchar_t* name, const wchar_t* spec) :
+	name(name),
+	spec(spec)
+{}
 
 FileDialogBase::FileDialogBase() :
 	owner(nullptr),

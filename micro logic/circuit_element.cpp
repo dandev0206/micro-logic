@@ -111,6 +111,11 @@ bool CircuitElement::isWireBased() const
 	return type == Wire || type == Net;
 }
 
+RigidElement::RigidElement() :
+	pos(0.f, 0.f),
+	dir(Direction::Up)
+{}
+
 AABB RigidElement::getAABB() const
 {
 	AABB aabb = rotate_rect(shared->extent, dir);
@@ -159,7 +164,7 @@ uint32_t RigidElement::getCurrSelectFlags() const
 
 uint32_t RigidElement::select(uint32_t flags)
 {
-	uint32_t delta = flags != isSelected();
+	uint32_t delta = (bool)flags != isSelected();
 
 	if (flags) style |= Style::Selected;
 

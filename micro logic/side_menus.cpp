@@ -6,6 +6,7 @@
 #include "main_window.h"
 #include "command.h"
 #include "math_utils.h"
+#include "micro_logic_config.h"
 
 #define ICON_TEXTURE_VAR main_window.textures[TEXTURE_ICONS_IDX]
 #include "icons.h"
@@ -154,23 +155,21 @@ void SelectingSideMenu::loop()
 		return;
 	}
 
-	if (!ws.capturing_mouse) return;
+	ws.clearHoverList();
 
 	auto drag_rect = ws.getDragRect(Mouse::Left);
-
-	ws.clearHoverList();
 	if (glm::length(drag_rect.getSize()) > DRAG_THRESHOLD) {
 		AABB aabb = ws.toPlane(drag_rect);
 
 		ws.showDragRect(Mouse::Left);
 
-		if (!Keyboard::isKeyPressed(Key::LShift)) {
+		if (ws.capturing_mouse && !Keyboard::isKeyPressed(Key::LShift)) {
 			ws.sheet->bvh.query(aabb, [&](auto iter) {
 				ws.addToHoverList(iter, aabb);
 				BVH_CONTINUE;
 			});
 		}
-	} else {
+	} else if (ws.capturing_mouse) {
 		auto pos = ws.getCursorPlanePos();
 
 		ws.sheet->bvh.query(pos, [&](auto iter) {

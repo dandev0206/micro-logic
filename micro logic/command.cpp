@@ -312,7 +312,7 @@ void Command_Copy::redo(SchematicSheet& sheet)
 
 void Command_Copy::undo(SchematicSheet& sheet)
 {
-	auto id = sheet.id_counter -= sheet.selections.size();
+	auto id = sheet.id_counter -= (uint32_t)sheet.selections.size();
 
 	for (auto& selection : sheet.selections) {
 		auto& elem = static_cast<CircuitElement&>(*selection->second);

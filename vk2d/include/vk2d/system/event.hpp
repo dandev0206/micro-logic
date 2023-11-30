@@ -28,6 +28,7 @@ struct Event {
 	union {
 		struct {
 			uvec2 size;
+			uvec2 fb_size;
 		} resize;
 
 		struct {

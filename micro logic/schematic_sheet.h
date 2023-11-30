@@ -5,8 +5,6 @@
 #include "serialize.h"
 #include "bvh.hpp"
 
-#define MIN_SCALE 0.05f
-#define MAX_SCALE 20.f
 #define CMD_ONLY
 
 class SchematicSheet : public Serialrizable, public Unserialrizable {

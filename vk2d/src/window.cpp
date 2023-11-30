@@ -6,9 +6,14 @@
 
 VK2D_BEGIN
 
-Window::Window(uint32_t width, uint32_t height, const char* title, Style style)
+Window::Window(uint32_t width, uint32_t height, const char* title, int32_t style)
 {
 	create(width, height, title, style);
+}
+
+Window::Window(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style)
+{
+	create(width, height, title, parent, style);
 }
 
 Window::~Window()
@@ -35,12 +40,11 @@ void Window::draw(const Drawable& drawable, const RenderOptions& options)
 
 void Window::display()
 {
-	if (!impl->render_begin && impl->minimized) return;
+	if (!impl->render_begin || impl->minimized) return;
 
-	auto& inst = VKInstance::get();
+	auto& inst   = VKInstance::get();
 	auto& device = inst.device;
-
-	auto& frame       = impl->frames[impl->frame_idx];
+	auto& frame  = impl->frames[impl->frame_idx];
 	
 	auto& cmd_buffer      = frame.cmd_buffer;
 	auto& semaphores      = impl->semaphores[impl->semaphore_idx];
@@ -83,9 +87,19 @@ bool Window::waitEvent(Event& event)
 	return impl->waitEvent(event);
 }
 
-void Window::create(uint32_t width, uint32_t height, const char* title, Style style)
+void Window::create(uint32_t width, uint32_t height, const char* title, int32_t style)
 {
-	impl = new WindowImpl(width, height, title, style);
+	VK2D_ASSERT(!impl && "window already created");
+	
+	impl = new WindowImpl(width, height, title, nullptr, style);
+}
+
+void Window::create(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style)
+{
+	VK2D_ASSERT(!impl && "window already created");
+	VK2D_ASSERT(parent.impl && "parent is closed window");
+
+	impl = new WindowImpl(width, height, title, parent.impl, style);
 }
 
 void Window::close()
@@ -119,6 +133,16 @@ void Window::setSize(const glm::uvec2& size) const
 	impl->setSize(size);
 }
 
+uvec2 Window::getFrameBufferSize() const
+{
+	return impl->fb_size;
+}
+
+void Window::setFrameBufferSize(const uvec2& size) const
+{
+	impl->setFBSize(size);
+}
+
 float Window::getTransparency() const
 {
 	return impl->transparency;
@@ -127,6 +151,16 @@ float Window::getTransparency() const
 void Window::setTransparency(float value)
 {
 	return impl->setTransparency(value);
+}
+
+bool Window::isVisible() const
+{
+	return impl->visible;
+}
+
+void Window::setVisible(bool value)
+{
+	impl->setVisible(value);
 }
 
 const char* Window::getTitle() const
@@ -200,22 +234,22 @@ void Window::beginRenderPass()
 
 	impl->acquireSwapchainImage();
 	
-	auto& frame  = impl->frames[impl->frame_idx];
+	auto& frame = impl->frames[impl->frame_idx];
 
 	(void)device.waitForFences(1, &frame.fence, true, UINT64_MAX);
 	(void)device.resetFences(1, &frame.fence);
 
+	auto fb_size     = impl->fb_size;
 	auto& cmd_buffer = frame.cmd_buffer;
 	auto& cmd_pool   = frame.cmd_pool;
 	device.resetCommandPool(cmd_pool);
 
 	{ // reset frame states
-		auto size = impl->size;
-		frame.states.defualt_viewport  = vk::Viewport(0.f, 0.f, (float)size.x, (float)size.y);
-		frame.states.defualt_scissor   = vk::Rect2D({ 0, 0 }, { size.x, size.y });
+		frame.states.defualt_viewport  = vk::Viewport(0.f, 0.f, (float)fb_size.x, (float)fb_size.y);
+		frame.states.defualt_scissor   = vk::Rect2D({ 0, 0 }, { fb_size.x, fb_size.y });
 		frame.states.default_transform = Transform::identity().
 			translate(-1.f, -1.f).
-			scale(2.f / size.x, 2.f / size.y);
+			scale(2.f / fb_size.x, 2.f / fb_size.y);
 	}
 
 	cmd_buffer.begin({ vk::CommandBufferUsageFlagBits::eOneTimeSubmit });
@@ -223,7 +257,7 @@ void Window::beginRenderPass()
 	vk::RenderPassBeginInfo renderpass_info = {
 		inst.renderpass,
 		frame.frameBuffer,
-		{ { 0, 0 }, { impl->size.x, impl->size.y } },
+		{ { 0, 0 }, { fb_size.x, fb_size.y } },
 		1, &clear_value
 	};
 

@@ -1,6 +1,5 @@
 #include <vk2d/vk_instance.h>
 #include "main_window.h"
-#include "gui/platform/windows_main_window.h"
 
 using namespace std;
 using namespace vk2d;
@@ -12,7 +11,7 @@ int main() {
 
 	VKInstance instance(info, {}, {}, true);
 
-	//Window window(720, 480, "test");
+	//Window window(720, 480, "test", Window::Resizable | Window::Visible);
 
 	//while (!window.isClosed()) {
 	//	vk2d::Event e;
@@ -28,7 +27,7 @@ int main() {
 	//	}
 	//}
 
-	//return 0;
+	// return 0;
 
 	MainWindow main_window;
 

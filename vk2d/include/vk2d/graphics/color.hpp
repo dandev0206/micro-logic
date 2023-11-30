@@ -151,9 +151,12 @@ enum class Colors : uint32_t {
 struct Color {
 	VK2D_INLINE Color() VK2D_NOTHROW = default;
 
+#pragma warning(push)
+#pragma warning(disable: 26495)
 	VK2D_INLINE Color(Colors color) VK2D_NOTHROW {
 		*reinterpret_cast<Colors*>(this) = color;
 	}
+#pragma warning(pop)
 
 	VK2D_INLINE explicit Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) VK2D_NOTHROW :
 		r(r),

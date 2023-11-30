@@ -103,6 +103,8 @@ void Texture::resize(const uvec2& size)
 
 void Texture::destroy()
 {
+	if (empty()) return;
+
 	auto& inst   = VKInstance::get();
 	auto& device = inst.device;
 

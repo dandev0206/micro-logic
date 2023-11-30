@@ -5,7 +5,6 @@
 #include <vk2d/graphics/texture_view.h>
 #include <vk2d/system/clipboard.h>
 #include <vk2d/system/file_dialog.h>
-#include <vk2d/system/message_box.h>
 #include <imgui_internal.h>
 #include <tinyxml2.h>
 #include <thread>
@@ -19,18 +18,16 @@
 #include "circuit_element_loader.h"
 #include "base64.h"
 #include "icons.h"
+#include "micro_logic_config.h"
 
 #ifdef _WIN32 
-#include "gui/platform/windows_main_window.h"
+#include "gui/platform/platform_windows_impl.h"
 #endif
 
 #define STRINGIZE_DETAIL(x) #x
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #define IMGUI_NO_LABEL "##" STRINGIZE(__COUNTER__)
 
-#define RESOURCE_DIR_NAME "resources\\"
-
-using vk2d::MessageBox;
 using vk2d::DialogResult;
 
 MainWindow* MainWindow::main_window = nullptr;
@@ -100,28 +97,17 @@ MainWindow::MainWindow() :
 
 	std::setlocale(LC_ALL, "");
 
-	window.create(1280, 800, "micro logic", vk2d::Window::Style::None);
+	window.create(1280, 800, "micro logic", vk2d::Window::Resizable);
+	msg_box.init(&window);
+
 #ifdef _WIN32 
+	InjectTitleBar(window, titlebar);
+	InjectTitleBar(msg_box.getWindow(), msg_box.getTitlebar());
 	InjectWndProc(this);
 #endif
 
 	{ // load font
-		font.loadFromFile("C:/Windows/Fonts/consola.ttf");
-		font.getGlyph('a', 100, true);
-		font.getGlyph('b', 100, true);
-		font.getGlyph('c', 100, true);
-		font.getGlyph('d', 100, true);
-		font.getGlyph('e', 100, true);
-		font.getGlyph('f', 100, true);
-		font.getGlyph('g', 100, true);
-		font.getGlyph('h', 100, true);
-		font.getGlyph('i', 100, true);
-		font.getGlyph('j', 100, true);
-		font.getGlyph('k', 100, true);
-		font.getGlyph('l', 100, true);
-		font.getGlyph('m', 100, true);
-		font.getGlyph('n', 100, true);
-		font.getGlyph('o', 100, true);
+		font.loadFromFile(FONT_PATH);
 	}
 	{ // load side menus
 		side_menus.emplace_back(std::make_unique<Menu_Info>());
@@ -161,8 +147,9 @@ MainWindow::MainWindow() :
 		window_library.bindMenuLibrary(dynamic_cast<Menu_Library&>(*side_menus[3]));
 	}
 
-	hovered_title_button = TitleButton::None;
-	close_window         = false;
+	resize_tab_hovered = false;
+	want_open_project  = false;
+	want_close_window  = false;
 
 	initializeProject();
 	ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
@@ -183,6 +170,8 @@ MainWindow::MainWindow() :
 		//window_sheets[1].show = true;
 		//window_sheets[1].name = "Sheet1";
 	}
+
+	window.setVisible(true);
 }
 
 MainWindow::~MainWindow()
@@ -212,7 +201,7 @@ void MainWindow::initializeProject()
 		settings.view.grid_color         = Color(1.f, 1.f, 1.f, 0.5f);
 		settings.view.grid_axis_color    = Color(1.f, 1.f, 1.f, 0.7f);
 		settings.view.library_window     = true;
-		
+
 		settings.debug.show_bvh        = false;
 		settings.debug.show_chunks     = false;
 		settings.debug.show_fps        = false;
@@ -253,6 +242,23 @@ void MainWindow::initializeProject()
 	initialized = true;
 }
 
+bool MainWindow::closeProjectDialog()
+{
+	msg_box.title   = "closing project " + project_name;
+	msg_box.content = "current project is not saved, save?";
+	msg_box.buttons = "Yes;No;Cancel";
+
+	auto result = msg_box.showDialog();
+	if (result == "Yes") {
+		if (!isProjectOpened())
+			saveProjectDialog();
+		saveProject();
+	}else if (result == "Cancel" || result == "Close")
+		return false;
+
+	return true;
+}
+
 void MainWindow::closeProject()
 {
 	assert(initialized);
@@ -261,7 +267,7 @@ void MainWindow::closeProject()
 		saveProjectIni();
 	ImGui::VK2D::ShutDown(window);
 
-	project_dir  = "";
+	project_dir = "";
 	project_name = "";
 	sheets.clear();
 	window_sheets.clear();
@@ -273,12 +279,28 @@ void MainWindow::show()
 {
 	while (true) {
 		float dt = getDeltaTime();
-		
+
 		vk2d::Event e;
 		while (window.pollEvent(e))
 			eventProc(e, dt);
 
-		if (close_window) {
+		if (want_open_project) {
+			do {
+				if (!isProjectEmpty() && !isProjectAllSaved())
+					if (!closeProjectDialog())
+						break;
+
+				if (!new_project_dir.empty())
+					openProject(new_project_dir);
+				else
+					initializeProject();
+			} while (false);
+
+			want_open_project = false;
+			new_project_dir   = "";
+		}
+
+		if (want_close_window) {
 			closeProject();
 			window.close();
 			break;
@@ -379,57 +401,43 @@ void MainWindow::eventProc(const vk2d::Event& e, float dt)
 
 void MainWindow::closeWindowDialog()
 {
-	if (hasUnsavedSchematicSheet() || !project_saved) {
-		MessageBox msg_box;
+	if (!isProjectEmpty() && !isProjectAllSaved())
+		if (!closeProjectDialog()) return;
 
-		msg_box.title = to_wide("closing project " + project_name);
-		msg_box.msg = to_wide("current project not saved, save?");
-		msg_box.buttons = MessageBox::Yes_No_Cancel;
-
-		auto result = msg_box.showDialog();
-
-		if (result == DialogResult::Yes) {
-			if (!isProjectOpened())
-				saveProjectDialog();
-			saveProject();
-		}
-		else if (result == DialogResult::Cancel)
-			return;
-	}
-
-	close_window = true;
+	want_close_window = true;
 }
 
 void MainWindow::openProjectDialog()
 {
-	namespace fs = std::filesystem;
-
-	vk2d::FolderOpenDialog dialog;
+	vk2d::FileOpenDialog dialog;
 
 	dialog.owner        = &window;
 	dialog.title        = L"Open Project";
 	dialog.default_dir  = L"%Desktop";
 	dialog.default_name = L"";
-	dialog.check_empty  = true;
+	dialog.filters.emplace_back(L"Project file", L"mlp");
 
 	if (dialog.showDialog() != vk2d::DialogResult::OK) return;
 
-	auto dir  = to_unicode(dialog.getResultDir());
-	auto name = to_unicode(fs::path(dir).filename());
+	auto dir  = to_unicode(dialog.getResultPaths().front());
+	auto path = std::filesystem::path(dir);
+	auto name = to_unicode(path.filename());
+
+	assert(path.extension() == L"mls");
 	
 	if (dir == project_dir && name == project_name) {
 
-	} else
-		openProject(dir);
+	} else {
+		want_open_project = true;
+		new_project_dir   = dir;
+	}
 }
 
 void MainWindow::openProject(const std::string& dir)
 {
 	namespace fs = std::filesystem;
-	using vk2d::MessageBox;
 
 	std::vector<SchematicSheetPtr_t> new_sheets;
-	std::vector<Window_SheetPtr_t>   new_window_sheets;
 
 	auto new_project_name  = to_unicode(fs::path(dir).filename());
 	auto project_file_name = dir + "\\" + new_project_name + ".mlp";
@@ -447,10 +455,9 @@ void MainWindow::openProject(const std::string& dir)
 			std::ifstream file(dir + "\\" + file_name);
 
 			if (!file.is_open()) {
-				vk2d::MessageBox msg_box;
-				msg_box.owner = &window;
-				msg_box.title = L"Error";
-				msg_box.msg   = to_wide("cannot locate " + file_name);
+				msg_box.title   = "Error";
+				msg_box.content = "cannot locate " + file_name;
+				msg_box.buttons = "OK";
 
 				msg_box.showDialog();
 				return;
@@ -461,10 +468,9 @@ void MainWindow::openProject(const std::string& dir)
 			updateThumbnail(*sheet);
 
 			if (elem->Attribute("guid") != sheet->guid) {
-				vk2d::MessageBox msg_box;
-				msg_box.owner = &window;
-				msg_box.title = L"Error";
-				msg_box.msg   = to_wide("guid of sheet " + file_name + " is different");
+				msg_box.title   = "Error";
+				msg_box.content = "guid of sheet " + file_name + " is different";
+				msg_box.buttons = "OK";
 
 				msg_box.showDialog();
 				return;
@@ -480,7 +486,6 @@ void MainWindow::openProject(const std::string& dir)
 	project_name     = new_project_name;
 	project_ini_name = project_dir + "\\" + project_name + ".ini";
 	sheets.swap(new_sheets);
-	window_sheets.swap(new_window_sheets);
 	project_saved = true;
 
 	loadProjectIni();
@@ -591,6 +596,18 @@ SideMenu& MainWindow::getCurrentSideMenu()
 	return *curr_menu;
 }
 
+bool MainWindow::isProjectAllSaved() const
+{
+	return !hasUnsavedSchematicSheet() && project_saved;
+}
+
+bool MainWindow::isProjectEmpty() const
+{
+	if (!project_name.empty()) return false;
+	if (!sheets.empty()) return false;
+	return true;
+}
+
 void MainWindow::setCurrentSideMenu(SideMenu* menu)
 {
 	if (curr_menu == menu) return;
@@ -602,6 +619,25 @@ void MainWindow::setCurrentSideMenu(SideMenu* menu)
 
 	if (curr_window_sheet && curr_menu)
 		curr_menu->onBegin();
+}
+
+void MainWindow::importSchematicSheetDialog()
+{
+	vk2d::FileOpenDialog dialog;
+
+	dialog.owner        = &window;
+	dialog.title        = L"Import";
+	dialog.default_dir  = L"%Desktop";
+	dialog.default_name = L"";
+	dialog.filters.emplace_back(L"Schematic sheet file", L"mls");
+
+	if (dialog.showDialog() != vk2d::DialogResult::OK) return;
+
+
+}
+
+void MainWindow::exportSchematicSheetDialog()
+{
 }
 
 void MainWindow::addSchematicSheet()
@@ -849,49 +885,55 @@ void MainWindow::showMainMenus()
 	spacing *= 1.5;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-	if (ImGui::BeginMainMenuBar())
-	{
-		if (ImGui::BeginMenu("File"))
-		{
+	if (ImGui::BeginMainMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
 			ImGui::SetCursorPosX(spacing);
-			if (ImGui::BeginMenu("New...")) {
-				if (ImGui::MenuItem("Project")) {}
-				if (ImGui::MenuItem("Sheet")) {}
+			if (ImGui::BeginMenu("Recent...")) {
 				ImGui::EndMenu();
+			}
+
+			ImGui::Image(ICON_FOLDER, icon_size);
+			ImGui::SameLine();
+			if (ImGui::MenuItem("Open")) {
+				if (!isProjectEmpty() || isProjectAllSaved())
+					closeProjectDialog();
+				openProjectDialog();
 			}
 
 			ImGui::Image(ICON_WINDOW, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("New Window")) {}
 
-			ImGui::Image(ICON_FOLDER, icon_size);
-			ImGui::SameLine();
-			if (ImGui::MenuItem("Open")) {}
-
-			ImGui::SetCursorPosX(spacing);
-			if (ImGui::BeginMenu("Open Recent...")) {
-				ImGui::EndMenu();
-			}
-
 			ImGui::Separator();
 
-			ImGui::Image(ICON_SAVE, icon_size);
-			ImGui::SameLine();
-			if (ImGui::MenuItem("Save")) {
-				trySaveProject();
+			if (curr_window_sheet && !curr_window_sheet->sheet->file_saved) {
+				std::string save_str = "Save ";
+				save_str += curr_window_sheet->sheet->name;
+				save_str += "###MenuItemSave";
+
+				ImGui::Image(ICON_SAVE, icon_size);
+				ImGui::SameLine();
+				if (ImGui::MenuItem(save_str.c_str(), "Ctrl+S"))
+					trySaveProject();
+			} else {
+				ImGui::Image(ICON_SAVE, icon_size, vk2d::Colors::Gray);
+				ImGui::SameLine();
+				ImGui::MenuItem("Save###MenuItemSave", "Ctrl+S", false, false);
 			}
+
+			ImGui::SetCursorPosX(spacing);
+			if (ImGui::MenuItem("Save Project"))
+				trySaveProject();
+
+			ImGui::SetCursorPosX(spacing);
+			if (ImGui::MenuItem("Save Project As..."))
+				if (saveProjectDialog())
+					saveProject();
 
 			ImGui::Image(ICON_SAVE_ALL, icon_size);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Save All")) {
+			if (ImGui::MenuItem("Save All", "Ctrl+Shift+S"))
 				trySaveProject();
-			}
-
-			ImGui::SetCursorPosX(spacing);
-			if (ImGui::MenuItem("Save As...")) {
-				saveProjectDialog();
-				saveProject();
-			}
 
 			ImGui::Separator();
 
@@ -911,36 +953,39 @@ void MainWindow::showMainMenus()
 
 			ImGui::Image(ICON_EXIT, icon_size);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Exit")) {
+			if (ImGui::MenuItem("Exit", "Alt+F4")) {
 				closeWindowDialog();
 			}
 			ImGui::EndMenu();
 		}
-		if (ImGui::BeginMenu("Edit"))
-		{
-			ImGui::Image(ICON_UNDO, icon_size);
+		if (ImGui::BeginMenu("Edit")) {
+			auto undo_tint = isUndoable() ? vk2d::Colors::White : vk2d::Colors::Gray;
+			ImGui::Image(ICON_UNDO, icon_size, undo_tint);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Undo", "CTRL+Z", false, isUndoable())) undo();
+			if (ImGui::MenuItem("Undo", "Ctrl+Z", false, isUndoable())) undo();
 
-			ImGui::Image(ICON_REDO, icon_size);
+			auto redo_tint = isRedoable() ? vk2d::Colors::White : vk2d::Colors::Gray;
+			ImGui::Image(ICON_REDO, icon_size, redo_tint);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Redo", "CTRL+Y", false, isRedoable())) redo();
+			if (ImGui::MenuItem("Redo", "Ctrl+Y", false, isRedoable())) redo();
 
 			ImGui::Separator();
 
-			ImGui::Image(ICON_COPY, icon_size);
+			bool has_ws    = curr_window_sheet;
+			auto edit_tint = has_ws ? vk2d::Colors::White : vk2d::Colors::Gray;
+			ImGui::Image(ICON_COPY, icon_size, edit_tint);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Copy", "CTRL+C"))
+			if (ImGui::MenuItem("Copy", "Ctrl+C", false, has_ws))
 				getCurrentWindowSheet().copySelectedToClipboard();
 
-			ImGui::Image(ICON_CUT, icon_size);
+			ImGui::Image(ICON_CUT, icon_size, edit_tint);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Cut", "CTRL+X"))
+			if (ImGui::MenuItem("Cut", "Ctrl+X", false, has_ws))
 				getCurrentWindowSheet().cutSelectedToClipboard();
 
-			ImGui::Image(ICON_PASTE, icon_size);
+			ImGui::Image(ICON_PASTE, icon_size, edit_tint);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Paste", "CTRL+V"))
+			if (ImGui::MenuItem("Paste", "Ctrl+V", false, has_ws))
 				beginClipboardPaste();
 
 			ImGui::EndMenu();
@@ -1012,11 +1057,18 @@ void MainWindow::showMainMenus()
 		if (project_saved)
 			ImGui::TextUnformatted(project_name.c_str());
 		else if (!project_name.empty())
-			ImGui::TextUnformatted(("*" + project_name).c_str());
-		else 
-			ImGui::TextUnformatted("*Untitled");
+			ImGui::Text("*%s", project_name.c_str());
+		else if (isProjectEmpty())
+			ImGui::TextUnformatted("(empty project)");
+		else
+			ImGui::TextUnformatted("*(empty project)");
 
-		showTitleButtons();
+		auto cursor_x = ImGui::GetCursorPosX();
+		auto width    = ImGui::GetWindowWidth();
+		auto height    = ImGui::GetWindowHeight();
+
+		titlebar.setCaptionRect({ cursor_x, 0.f, width - cursor_x, height});
+		titlebar.showButtons();
 		ImGui::EndMainMenuBar();
 	}
 	ImGui::PopStyleVar();
@@ -1029,6 +1081,7 @@ void MainWindow::showUpperMenus()
 	ImGuiWindowFlags window_flags = 
 		ImGuiWindowFlags_NoScrollbar | 
 		ImGuiWindowFlags_NoSavedSettings | 
+		ImGuiWindowFlags_NoNav | 
 		ImGuiWindowFlags_MenuBar;
 	
 	float height = ImGui::GetFrameHeight();
@@ -1056,7 +1109,7 @@ void MainWindow::showUpperMenus()
 
 			ImGui::Separator();
 
-			if (curr_menu) 
+			if (curr_window_sheet && curr_menu) 
 				curr_menu->upperMenu();
 
 			ImGui::EndMenuBar();
@@ -1072,7 +1125,8 @@ void MainWindow::showStatusBar()
 
 	ImGuiWindowFlags window_flags = 
 		ImGuiWindowFlags_NoScrollbar | 
-		ImGuiWindowFlags_NoSavedSettings | 
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoNav |
 		ImGuiWindowFlags_MenuBar;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(5, 5));
@@ -1117,6 +1171,17 @@ void MainWindow::showStatusBar()
 
 				ImGui::Text(" -  %.1f%%", 100.f * scale);
 			}
+
+			if (!window.isMaximized()) {
+				ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 35);
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.14f, 0.14f, 0.14f, 1.f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.14f, 0.14f, 0.14f, 1.f));
+				ImGui::ImageButton(ICON_RESIZE_TAB, { 23, 23 });
+				ImGui::PopStyleColor(2);
+				resize_tab_hovered = ImGui::IsItemHovered();
+			} else
+				resize_tab_hovered = false;
+
 			ImGui::EndMenuBar();
 		}
 		ImGui::End();
@@ -1126,7 +1191,11 @@ void MainWindow::showStatusBar()
 
 void MainWindow::showSideMenus()
 {
-	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings;
+	ImGuiWindowFlags window_flags =
+		ImGuiWindowFlags_NoScrollbar | 
+		ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_NoNav;
+
 	if (ImGui::BeginViewportSideBar("##SideBar", nullptr, ImGuiDir_Left, 60, window_flags)) {
 		curr_menu_hover = nullptr;
 
@@ -1178,33 +1247,4 @@ void MainWindow::showFPS()
 	ImGui::Text("dt : %.2fms", 1000.f * io.DeltaTime);
 	ImGui::Text("fps: %d", (int)(1.f / io.DeltaTime));
 	ImGui::End();
-}
-
-void MainWindow::showTitleButtons()
-{
-	static const int title_height = 23;
-
-	vec2 button_size(title_height * 1.52, title_height);
-
-	hovered_title_button = TitleButton::None;
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-
-	ImGui::SetCursorPosX(ImGui::GetWindowWidth() - button_size.x * 4.8f);
-	ImGui::ImageButton(ICON_MINIMIZE, button_size);
-	if (ImGui::IsItemHovered()) 
-		hovered_title_button = TitleButton::Minimize;
-
-	ImGui::SameLine();
-	ImGui::ImageButton(ICON_MAXIMIZE, button_size);
-	if (ImGui::IsItemHovered()) 
-		hovered_title_button = TitleButton::Maximize;
-
-	ImGui::SameLine();
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.83f, 0.13f, 0.2f, 1.f));
-	ImGui::ImageButton(ICON_CLOSE, button_size);
-	if (ImGui::IsItemHovered()) 
-		hovered_title_button = TitleButton::Close;
-	ImGui::PopStyleColor();
-
-	ImGui::PopStyleVar();
 }

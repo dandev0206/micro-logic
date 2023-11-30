@@ -18,31 +18,22 @@ public:
 		mouse_prev(0, 0),
 		position(0, 0),
 		size(0, 0),
+		fb_size(0, 0),
 		transparency(0.f),
+		visible(false),
 		minimized(false),
 		maximized(false),
 		focussed(false),
 		user_ptr(nullptr),
 		surface(nullptr),
-		present_queue_family_idx(~0),
 		swapchain(nullptr),
+		present_queue_family_idx(~0),
+		image_format(vk::Format::eR8G8B8A8Unorm),
 		frame_idx(0),
 		semaphore_idx(0),
 		update_swapchain(true),
-		image_format(vk::Format::eR8G8B8A8Unorm),
 		render_begin(false)
 	{}
-
-	std::queue<Event> events;
-	std::string       title;
-	ivec2             mouse_prev;
-	ivec2             position;
-	uvec2             size;
-	float             transparency;
-	bool              minimized;
-	bool              maximized;
-	bool              focussed;
-	void*             user_ptr;
 
 	struct WindowFrame {
 		vk::Image       image;
@@ -62,22 +53,36 @@ public:
 		vk::Semaphore render_complete;
 	};
 
-	vk::SurfaceKHR              surface;
-	uint32_t                    present_queue_family_idx;
-	vk::SwapchainKHR            swapchain;
+	std::queue<Event> events;
+	std::string       title;
+	ivec2             mouse_prev;
+	ivec2             position;
+	uvec2             size;
+	uvec2             fb_size;
+	float             transparency;
+	bool              visible;
+	bool              minimized;
+	bool              maximized;
+	bool              focussed;
+	void*             user_ptr;
+
+	vk::SurfaceKHR                    surface;
+	vk::SwapchainKHR                  swapchain;
+	uint32_t                          present_queue_family_idx;
+	vk::SurfaceCapabilitiesKHR        capabilities;
+	std::vector<vk::SurfaceFormatKHR> formats;
+	std::vector<vk::PresentModeKHR>   presentModes;
+	vk::Format                        image_format;
+
+	
 	std::vector<WindowFrame>    frames;
 	std::vector<FrameSemaphore> semaphores;
 	
 	uint32_t frame_idx;
 	uint32_t semaphore_idx;
 	bool     update_swapchain;
+	bool     render_begin;
 
-	vk::SurfaceCapabilitiesKHR        capabilities;
-	std::vector<vk::SurfaceFormatKHR> formats;
-	std::vector<vk::PresentModeKHR>   presentModes;
-	vk::Format                        image_format;
-
-	bool render_begin;
 
 	void init() {
 		auto& inst = VKInstance::get();
@@ -90,15 +95,9 @@ public:
 			}
 		}
 
-		frame_idx        = 0;
-		semaphore_idx    = 0;
-		update_swapchain = false;
-
 		capabilities = inst.physical_device.getSurfaceCapabilitiesKHR(surface);
 		formats      = inst.physical_device.getSurfaceFormatsKHR(surface);
 		presentModes = inst.physical_device.getSurfacePresentModesKHR(surface);
-
-		render_begin   = false;
 
 		recreate_swapchain();
 	}
@@ -136,7 +135,7 @@ public:
 			get_swapchain_image_count(),
 			image_format,
 			vk::ColorSpaceKHR::eSrgbNonlinear,
-			extent,
+			get_swapchain_extent(),
 			1,
 			vk::ImageUsageFlagBits::eColorAttachment,
 			{}, {}, {},
@@ -164,24 +163,30 @@ public:
 		}
 
 		swapchain = inst.device.createSwapchainKHR(swapchain_info);
-		size      = { extent.width, extent.height };
 		device.destroy(old_swapchain);
 
 		create_window_frame();
 		create_frame_semaphores();
+
+		update_swapchain = false;
 	}
 
 	void acquireSwapchainImage() {
 		auto& device = VKInstance::get().device;
 
+		if (update_swapchain)
+			recreate_swapchain();
+
 		while(true) {
-			auto image_acquired = semaphores[semaphore_idx].image_acquired;
-			
-			auto res = device.acquireNextImageKHR(swapchain, UINT64_MAX, image_acquired, nullptr, &frame_idx);
+			auto res = device.acquireNextImageKHR(
+				swapchain,
+				UINT64_MAX,
+				semaphores[semaphore_idx].image_acquired,
+				nullptr,
+				&frame_idx);
 
-			if (res != vk::Result::eSuboptimalKHR && res != vk::Result::eErrorOutOfDateKHR && !update_swapchain) return;
+			if (res != vk::Result::eSuboptimalKHR && res != vk::Result::eErrorOutOfDateKHR) return;
 
-			update_swapchain = false;
 			recreate_swapchain();
 		};
 	}
@@ -193,8 +198,8 @@ private:
 		} else {
 			vk::Extent2D actualExtent{ size.x, size.y };
 
-			actualExtent.width = clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-			actualExtent.height = clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+			actualExtent.width  = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
 			return actualExtent;
 		}
@@ -240,7 +245,9 @@ private:
 				{},
 				inst.renderpass,
 				1, &image_view,
-				size.x, size.y, 1,
+				capabilities.currentExtent.width,
+				capabilities.currentExtent.height, 
+				1,
 			};
 
 			vk::CommandPoolCreateInfo command_pool_info = {

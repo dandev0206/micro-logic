@@ -68,7 +68,7 @@ void DockingWindow::beginDockWindow(const char* name, bool* p_open, ImGuiWindowF
 	
 	content_rect.setPosition(to_vec2(ImGui::GetWindowContentRegionMin()) + pos);
 	content_rect.setSize(to_vec2(ImGui::GetWindowContentRegionMax()) + pos - content_rect.getPosition());
-	
+
 	focussed = ImGui::IsWindowFocused();
 	hovered  = ImGui::IsWindowHovered();
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vk2d/system/window.h>
+#include <vk2d/system/dialog.h>
 #include <vk2d/graphics/texture.h>
 #include <vk2d/system/font.h>
 #include <chrono>
@@ -10,18 +11,8 @@
 #include "window/window_history.h"
 #include "window/window_explorer.h"
 #include "side_menu.h"
-
-#define FRAME_LIMIT 60
-#define FONT_SIZE 25
-
-#define TEXTURE_ICONS_IDX 0
-
-enum class TitleButton {
-	None     = 0,
-	Minimize = 1,
-	Maximize = 2,
-	Close    = 3
-};
+#include "gui/custom_titlebar.h"
+#include "gui/message_box.h"
 
 class MainWindow {
 private:
@@ -48,6 +39,7 @@ public:
 	void closeWindowDialog();
 
 	void initializeProject();
+	bool closeProjectDialog();
 	void closeProject();
 	void openProjectDialog();
 	void openProject(const std::string& dir);
@@ -57,12 +49,16 @@ public:
 	void saveProjectIni();
 	bool trySaveProject();
 	bool isProjectOpened() const;
+	bool isProjectAllSaved() const;
+	bool isProjectEmpty() const;
 
 	template <class Menu_T>
 	Menu_T* findSideMenu();
 	SideMenu& getCurrentSideMenu();
 	void setCurrentSideMenu(SideMenu* menu);
 
+	void importSchematicSheetDialog();
+	void exportSchematicSheetDialog();
 	void addSchematicSheet();
 	bool saveSchematicSheet(SchematicSheet& sheet);
 	void deleteSchematicSheet(SchematicSheet& sheet);
@@ -95,7 +91,6 @@ public:
 	void showSideMenus();
 	void showSheets();
 	void showFPS();
-	void showTitleButtons();
 
 public: // settings
 	struct {
@@ -154,10 +149,18 @@ public: // windows
 	Window_History  window_history;
 	Window_Explorer window_explorer;
 
-public:
-	TitleButton hovered_title_button;
+	MessageBox msg_box;
 
-	bool close_window;
+public:
+	CustomTitleBar titlebar;
+
+	bool resize_tab_hovered;
+
+	bool want_open_project;
+	bool want_close_window;
+
+	std::string new_project_dir;
+
 	bool initialized;
 };
 

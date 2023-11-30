@@ -22,11 +22,21 @@
 IMGUI_VK2D_BEGIN
 
 struct WindowData {
+	WindowData(EventProc event_proc, void* event_user_data) :
+		event_proc(event_proc),
+		event_user_data(event_user_data) {}
+
 	EventProc event_proc;
-	void* event_user_data;
+	void*     event_user_data;
 };
 
 struct BackendData {
+	BackendData() : 
+		context(nullptr),
+		window(nullptr),
+		want_update_monitors(true),
+		last_cursor(ImGuiMouseCursor_None) {}
+
 	ImGuiContext* context;
 	vk2d::Window* window;
 
@@ -36,22 +46,24 @@ struct BackendData {
 	vk2d::Cursor     cursors[ImGuiMouseCursor_COUNT];
 	ImGuiMouseCursor last_cursor;
 
-	bool WantUpdateMonitors;
+	bool want_update_monitors;
 };
 
 struct ViewportWindowData {
-	vk2d::Window* window;
+	ViewportWindowData() :
+		window(nullptr),
+		window_owned(false) {}
 
 	struct FrameData {
 		vk2d::VertexBuffer vertex_buffer;
 		vk2d::Buffer       index_buffer;
 	};
 
-	std::vector<FrameData> frames;
-
+	vk2d::Window*           window;
+	std::vector<FrameData>  frames;
 	std::vector<WindowData> window_datas;
-
-	bool window_owned;
+	BackendData*            backend;
+	bool                    window_owned;
 };
 
 // glsl_shader.vert, compiled with:
@@ -159,7 +171,6 @@ static uint32_t __glsl_shader_frag_spv[] =
 	0x00010038
 };
 
-static BackendData*                         curr_backend = nullptr;
 static std::map<std::intptr_t, BackendData*> backends;
 
 static void bind_key_map(ImGuiIO& io) 
@@ -207,11 +218,21 @@ static void bind_key_map(ImGuiIO& io)
 	io.KeyMap[ImGuiKey_Z]          = (int)vk2d::Key::Z;
 }
 
-void set_clipboard_text(void* user_data, const char* text) {
+static BackendData& get_backend_data(const vk2d::Window& window)
+{
+	auto& bd = *backends[(std::intptr_t)window.getNativeHandle()];
+	ImGui::SetCurrentContext(bd.context);
+
+	return bd;
+}
+
+void set_clipboard_text(void* user_data, const char* text) 
+{
 	vk2d::Clipboard::setString(text);
 }
 
-const char* get_clipboard_text(void* user_data) {
+const char* get_clipboard_text(void* user_data) 
+{
 	std::string str = vk2d::Clipboard::getString();
 
 	char* c_str = new char[str.size()];
@@ -219,7 +240,8 @@ const char* get_clipboard_text(void* user_data) {
 	return c_str;
 }
 
-static vk2d::Pipeline build_pipeline() {
+static vk2d::Pipeline build_pipeline() 
+{
 	vk2d::PipelineBuilder builder;
 
 	builder.addShader(__glsl_shader_vert_spv, sizeof(__glsl_shader_vert_spv), vk::ShaderStageFlagBits::eVertex);
@@ -238,10 +260,9 @@ static vk2d::Pipeline build_pipeline() {
 	return builder.build();
 }
 
-static void update_monitors() {
-	auto& bd = *curr_backend;
-	
-	bd.WantUpdateMonitors = false;
+static void update_monitors(BackendData& bd)
+{
+	bd.want_update_monitors = false;
 
 	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
@@ -302,12 +323,14 @@ static void ImGui_impl_vk2d_CreateWindow(ImGuiViewport* viewport)
 
 	uint32_t width  = (uint32_t)viewport->Size.x;
 	uint32_t height = (uint32_t)viewport->Size.y;
-	auto     flags  = vk2d::Window::Style::TopMost | vk2d::Window::Style::Visible;
+	int32_t  style  = vk2d::Window::Style::None;
 
-	// TODO: handle imgui window style
+	auto& main_vd = *(ViewportWindowData*)ImGui::GetMainViewport()->PlatformUserData;
+
 	vd.window = new vk2d::Window;
-	vd.window->create(width, height, "untitled", (vk2d::Window::Style)flags);
+	vd.window->create(width, height, "untitled", *main_vd.window, style);
 	vd.window->setPosition(to_ivec2(viewport->Pos));
+	vd.backend      = main_vd.backend;
 	vd.window_owned = true;
 
 	viewport->PlatformUserData  = &vd;
@@ -330,6 +353,7 @@ static void ImGui_impl_vk2d_DestroyWindow(ImGuiViewport* viewport)
 static void ImGui_impl_vk2d_ShowWindow(ImGuiViewport* viewport)
 {
 	auto& vd = *static_cast<ViewportWindowData*>(viewport->PlatformUserData);
+	vd.window->setVisible(true);
 }
 
 static void ImGui_impl_vk2d_SetWindowPos(ImGuiViewport* viewport, ImVec2 pos)
@@ -388,8 +412,6 @@ static void ImGui_impl_vk2d_SetWindowAlpha(ImGuiViewport* viewport, float alpha)
 
 static void ImGui_impl_vk2d_RenderWindow(ImGuiViewport* viewport, void* render_arg)
 {
-	//auto& vd = *static_cast<ViewportWindowData*>(viewport->PlatformUserData);
-
 	Render(viewport->DrawData);
 }
 
@@ -402,13 +424,11 @@ static void ImGui_impl_vk2d_SwapBuffers(ImGuiViewport* viewport, void* render_ar
 
 IMGUI_VK2D_API void Init(vk2d::Window& window, bool load_default_font)
 {
-	auto handle = (std::intptr_t)window.getNativeHandle();
-	backends[handle] = curr_backend = new BackendData();
+	backends[(std::intptr_t)window.getNativeHandle()] = new BackendData();
 	
-	auto& bd = *curr_backend;
-
+	auto& bd   = get_backend_data(window);
 	bd.context = ImGui::CreateContext();
-	bd.window = &window;
+	bd.window  = &window;
 
 	// pipeline
 	bd.pipeline = build_pipeline();
@@ -423,7 +443,7 @@ IMGUI_VK2D_API void Init(vk2d::Window& window, bool load_default_font)
 	bd.cursors[ImGuiMouseCursor_ResizeNWSE].loadFromSystem(vk2d::Cursor::SizeTopLeftBottomRight);
 	bd.cursors[ImGuiMouseCursor_Hand].loadFromSystem(vk2d::Cursor::Hand);
 
-	bd.WantUpdateMonitors = false;
+	bd.want_update_monitors = false;
 
 	auto& io = ImGui::GetIO();
 	
@@ -436,7 +456,7 @@ IMGUI_VK2D_API void Init(vk2d::Window& window, bool load_default_font)
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
 	// frame buffer size
-	io.DisplaySize = to_ImVec2((vec2)window.getSize());
+	io.DisplaySize = to_ImVec2((vec2)window.getFrameBufferSize());
 
 	// bind keys
 	bind_key_map(io);
@@ -445,6 +465,7 @@ IMGUI_VK2D_API void Init(vk2d::Window& window, bool load_default_font)
 	io.SetClipboardTextFn = set_clipboard_text;
 	io.GetClipboardTextFn = get_clipboard_text;
 
+	// platform window
 	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
 	platform_io.Platform_CreateWindow       = ImGui_impl_vk2d_CreateWindow;
@@ -468,21 +489,23 @@ IMGUI_VK2D_API void Init(vk2d::Window& window, bool load_default_font)
 	auto* viewport = ImGui::GetMainViewport();
 	auto& vd            = *(new ViewportWindowData);
 	vd.window           = &window;
+	vd.backend          = &bd;
 	vd.window_owned     = false;
 
 	viewport->PlatformUserData  = &vd;
 	viewport->PlatformHandle    = (void*)vd.window;
 	viewport->PlatformHandleRaw = vd.window->getNativeHandle();
 
-	update_monitors();
+	update_monitors(bd);
+}
+
+IMGUI_VK2D_API void SetCurrentContext(const vk2d::Window& window)
+{
+	get_backend_data(window);
 }
 
 IMGUI_VK2D_API void ProcessEvent(const vk2d::Window& window, const vk2d::Event& event)
 {
-	if (window.hasFocus()) {
-
-	}
-
 	auto& io = ImGui::GetIO();
 
 	switch (event.type) {
@@ -535,14 +558,15 @@ IMGUI_VK2D_API void ProcessEvent(const vk2d::Window& window, const vk2d::Event& 
 		break;
 	}
 
-	auto& vd = *static_cast<ViewportWindowData*>(ImGui::GetMainViewport()->PlatformUserData);
+	auto& main_vd = *static_cast<ViewportWindowData*>(ImGui::GetMainViewport()->PlatformUserData);
 	
-	for (auto& wd : vd.window_datas)
+	for (auto& wd : main_vd.window_datas)
 		wd.event_proc(event, io.DeltaTime, wd.event_user_data);
 }
 
 IMGUI_VK2D_API void ProcessViewportEvent(const vk2d::Window& window)
 {
+	auto& bd          = get_backend_data(window);
 	auto& io          = ImGui::GetIO();
 	auto& platform_io = ImGui::GetPlatformIO();
 
@@ -565,10 +589,12 @@ IMGUI_VK2D_API void ProcessViewportEvent(const vk2d::Window& window)
 
 IMGUI_VK2D_API void setViewportEventProc(ImGuiViewport* viewport, EventProc proc, void* user_data)
 {
+	VK2D_ASSERT(viewport && proc);
+
 	if (!viewport->PlatformUserData) return;
 
 	auto& vd = *static_cast<ViewportWindowData*>(viewport->PlatformUserData);
-	vd.window_datas.push_back(WindowData{ proc, user_data });
+	vd.window_datas.emplace_back(proc, user_data);
 }
 
 IMGUI_VK2D_API void Update(vk2d::Window& window, float dt)
@@ -583,11 +609,10 @@ IMGUI_VK2D_API void Update(vk2d::Window& window, float dt)
 
 IMGUI_VK2D_API void Update(vk2d::Window& window, const ivec2& mouse_pos, float dt)
 {
-	auto handle = (std::intptr_t)window.getNativeHandle();
-	auto& bd    = *curr_backend;
-	auto& io    = ImGui::GetIO();
+	auto& bd = get_backend_data(window);
+	auto& io = ImGui::GetIO();
 
-	io.DisplaySize = to_ImVec2(window.getSize());
+	io.DisplaySize = to_ImVec2(window.getFrameBufferSize());
 	io.DeltaTime   = dt;
 
 	if (window.hasFocus()) {
@@ -654,23 +679,23 @@ IMGUI_VK2D_API void Render(ImDrawData* draw_data)
 {
 	if (!draw_data || draw_data->TotalVtxCount == 0) return;
 
-	auto& inst = vk2d::VKInstance::get();
-	auto& bd   = *curr_backend;
-	auto& vd   = *(ViewportWindowData*)draw_data->OwnerViewport->PlatformUserData;
-	auto& io   = ImGui::GetIO();
+	auto& inst     = vk2d::VKInstance::get();
+	auto* viewport = draw_data->OwnerViewport;
+	auto& vd       = *(ViewportWindowData*)viewport->PlatformUserData;
+	auto& bd       = *vd.backend;
+	auto& io       = ImGui::GetIO();
+	auto fb_size   = vd.window->getFrameBufferSize();
 
-	if (vd.window->isMinimized()) return;
+	if (vd.window->isMinimized() || !fb_size.x || !fb_size.y) return;
 
 	vk2d::RenderTarget& target = *vd.window;
+	target.beginRenderPass();
 	vd.frames.resize(target.getFrameCount());
 
-	target.beginRenderPass();
-	auto& frame        = vd.frames[target.getCurrentFrameIdx()];
-	auto cmd_buffer    = target.getCommandBuffer();
+	auto& frame     = vd.frames[target.getCurrentFrameIdx()];
+	auto cmd_buffer = target.getCommandBuffer();
 
-	uint32_t fb_width  = vd.window->getSize().x;
-	uint32_t fb_height = vd.window->getSize().y;
-	if (fb_width <= 0 || fb_height <= 0) return;
+	if (fb_size.x <= 0 || fb_size.y <= 0) return;
 	
 	prepare_frame_data(draw_data, frame);
 
@@ -681,7 +706,7 @@ IMGUI_VK2D_API void Render(ImDrawData* draw_data)
 		);
 
 		vk::Viewport viewport = {
-			0, 0, (float)fb_width, (float)fb_height
+			0, 0, (float)fb_size.x, (float)fb_size.y
 		};
 
 		cmd_buffer.setViewport(0, 1, &viewport);
@@ -735,8 +760,8 @@ IMGUI_VK2D_API void Render(ImDrawData* draw_data)
 				// Clamp to viewport as vkCmdSetScissor() won't accept values that are off bounds
 				if (clip_min.x < 0.0f) { clip_min.x = 0.0f; }
 				if (clip_min.y < 0.0f) { clip_min.y = 0.0f; }
-				if (clip_max.x > fb_width) { clip_max.x = (float)fb_width; }
-				if (clip_max.y > fb_height) { clip_max.y = (float)fb_height; }
+				if (clip_max.x > fb_size.x) { clip_max.x = (float)fb_size.x; }
+				if (clip_max.y > fb_size.y) { clip_max.y = (float)fb_size.y; }
 				if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
 					continue;
 
@@ -767,6 +792,8 @@ IMGUI_VK2D_API void Render(ImDrawData* draw_data)
 
 IMGUI_VK2D_API void RenderViewports(vk2d::Window& window)
 {
+	auto& bd = get_backend_data(window);
+
 	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 	for (int i = 1; i < platform_io.Viewports.Size; i++) {
 		ImGuiViewport* viewport = platform_io.Viewports[i];
@@ -778,8 +805,9 @@ IMGUI_VK2D_API void RenderViewports(vk2d::Window& window)
 
 IMGUI_VK2D_API void DisplayViewports(vk2d::Window& window, bool display_main_viewport)
 {
-	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+	auto& bd = get_backend_data(window);
 
+	ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 	for (int i = display_main_viewport ? 0 : 1; i < platform_io.Viewports.Size; i++) {
 		ImGuiViewport* viewport = platform_io.Viewports[i];
 		if (viewport->Flags & ImGuiViewportFlags_IsMinimized) continue;
@@ -791,24 +819,22 @@ IMGUI_VK2D_API void DisplayViewports(vk2d::Window& window, bool display_main_vie
 IMGUI_VK2D_API void ShutDown(vk2d::Window& window)
 {
 	auto handle = (std::intptr_t)window.getNativeHandle();
-	auto& bd    = *backends[handle];
+	auto& bd    = get_backend_data(window);
 
 	bd.pipeline.destroy();
 	for (int i = 0; i < ImGuiMouseCursor_COUNT; ++i)
 		bd.cursors[i].destroy();
 
 	ImGui::DestroyContext(bd.context);
-
-	delete& bd;
+	delete &bd;
 
 	backends.erase(handle);
 }
 
 IMGUI_VK2D_API bool UpdateFontTexture(const vk2d::Window& window)
 {
-	auto handle = (std::intptr_t)window.getNativeHandle();
-	auto& bd    = *backends[handle];
-	auto& io    = ImGui::GetIO();
+	auto& bd = get_backend_data(window);
+	auto& io = ImGui::GetIO();
 
 	vk2d::Color* pixels;
 	int width, height;
@@ -818,19 +844,15 @@ IMGUI_VK2D_API bool UpdateFontTexture(const vk2d::Window& window)
 	bd.font_texture.resize(width, height);
 	bd.font_texture.update(pixels, uvec2(width, height));
 
-	auto descriptor_set = bd.font_texture.getDescriptorSet();
-	ImTextureID texID = *(ImTextureID*)&descriptor_set;
-	io.Fonts->SetTexID(texID);
+	auto desc_set = bd.font_texture.getDescriptorSet();
+	io.Fonts->SetTexID(*(ImTextureID*)&desc_set);
 
 	return true;
 }
 
 IMGUI_VK2D_API vk2d::Texture& GetFontTexture(const vk2d::Window& window)
 {
-	auto handle = (std::intptr_t)window.getNativeHandle();
-	auto& bd    = *backends[handle];
-	
-	return bd.font_texture;
+	return backends[(std::intptr_t)window.getNativeHandle()]->font_texture;
 }
 
 IMGUI_VK2D_END

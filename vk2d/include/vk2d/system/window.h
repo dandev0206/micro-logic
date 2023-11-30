@@ -16,19 +16,20 @@ class Window : public RenderTarget
 public:
 	enum Style {
 		None      = 0,
-		Resizable = 1 << 1,
-		TopMost   = 1 << 2,
-		Visible   = 1 << 3,
-		Minimize  = 1 << 4,
-		Maximize  = 1 << 5,
-		Close     = 1 << 6,
+		Resizable = 1 << 0,
+		TopMost   = 1 << 1,
+		Visible   = 1 << 2,
+		Minimize  = 1 << 3,
+		Maximize  = 1 << 4,
+		Close     = 1 << 5,
 		Titlebar  = Minimize | Maximize | Close,
 		Default   = Titlebar | Resizable | Visible
 	};
 
 	Window() VK2D_NOTHROW = default;
 	Window(Window&& rhs) VK2D_NOTHROW = default;
-	Window(uint32_t width, uint32_t height, const char* title, Style style = Style::Default);
+	Window(uint32_t width, uint32_t height, const char* title, int32_t style = Style::Default);
+	Window(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style = Style::Default);
 	~Window();
 
 	void draw(const Drawable& drawable) override;
@@ -38,7 +39,8 @@ public:
 	bool pollEvent(Event& event);
 	bool waitEvent(Event& event);
 
-	void create(uint32_t width, uint32_t height, const char* title, Style style = Style::Default);
+	void create(uint32_t width, uint32_t height, const char* title, int32_t style = Style::Default);
+	void create(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style = Style::Default);
 	void close();
 
 	bool isClosed() const;
@@ -49,8 +51,14 @@ public:
 	uvec2 getSize() const;
 	void setSize(const uvec2& size) const;
 
+	uvec2 getFrameBufferSize() const;
+	void setFrameBufferSize(const uvec2& size) const;
+
 	float getTransparency() const;
 	void setTransparency(float value);
+
+	bool isVisible() const;
+	void setVisible(bool value);
 
 	const char* getTitle() const;
 	void setTitle(const char* title);

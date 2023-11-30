@@ -2,6 +2,7 @@
 
 #include "../main_window.h"
 #include "../gui/imgui_custom.h"
+#include "../micro_logic_config.h"
 
 #define ICON_TEXTURE_VAR main_window.textures[TEXTURE_ICONS_IDX]
 #include "../icons.h"
@@ -63,7 +64,7 @@ void Window_History::showUI()
 
 				sprintf_s(buf, 10, "%lld", i);
 				ImGui::TableSetColumnIndex(0);
-				ImGui::PushID(i);
+				ImGui::PushID((ImGuiID)i);
 				if (ImGui::Selectable(buf, i == ws.curr_command, item_flags)) {
 					next_command = i;
 				}

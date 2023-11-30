@@ -5,6 +5,7 @@
 #include "../gui/imgui_custom.h"
 #include "../main_window.h"
 #include "../side_menus.h"
+#include "../micro_logic_config.h"
 
 #define ICON_TEXTURE_VAR main_window.textures[TEXTURE_ICONS_IDX]
 #include "../icons.h"
@@ -185,7 +186,7 @@ void Window_Library::showSelectable(const LogicGate& gate)
 	auto gate_idx = gate.shared->element_id;
 	auto flags    = ImGuiSelectableFlags_SpanAllColumns;
 
-	ImGui::PushID(gate_idx);
+	ImGui::PushID((int)gate_idx);
 
 	if (ImGui::Selectable(gate.shared->name.c_str(), gate_idx == menu->curr_gate, flags)) {
 		if (menu->curr_gate == gate_idx)
@@ -193,7 +194,7 @@ void Window_Library::showSelectable(const LogicGate& gate)
 		else {
 			auto& main_window = MainWindow::get();
 
-			menu->curr_gate = gate_idx;
+			menu->curr_gate = (int32_t)gate_idx;
 			resetPreview();
 			auto menu = main_window.findSideMenu<Menu_Library>();
 			main_window.setCurrentSideMenu(menu);

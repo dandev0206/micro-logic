@@ -27,7 +27,7 @@
     <ClCompile Include="main_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gui\platform\windows_main_window.cpp">
+    <ClCompile Include="gui\platform\platform_windows_impl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gui\imgui_custom.cpp">
@@ -66,6 +66,12 @@
     <ClCompile Include="window\window_explorer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gui\message_box.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\custom_titlebar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gui\imgui_impl_vk2d.h">
@@ -77,7 +83,7 @@
     <ClInclude Include="main_window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui\platform\windows_main_window.h">
+    <ClInclude Include="gui\platform\platform_windows_impl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="icons.h">
@@ -145,6 +151,15 @@
     </ClInclude>
     <ClInclude Include="window\window_explorer.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\message_box.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="micro_logic_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\custom_titlebar.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

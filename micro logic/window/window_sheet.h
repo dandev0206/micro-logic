@@ -94,5 +94,4 @@ public:
 
 	bool capturing_mouse;
 	bool update_grid;
-	bool close_window;
 };

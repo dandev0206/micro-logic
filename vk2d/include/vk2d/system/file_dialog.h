@@ -8,6 +8,9 @@ VK2D_BEGIN
 class FileDialogBase abstract {
 public:
 	struct filteritem_t {
+		filteritem_t();
+		filteritem_t(const wchar_t* name, const wchar_t* spec);
+
 		const wchar_t* name;
 		const wchar_t* spec;
 	};

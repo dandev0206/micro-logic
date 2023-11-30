@@ -96,7 +96,7 @@ void DrawCommand::addEllipse(const vec2& pos, const vec2& size, float width, con
 {
 	vec2 p0 = pos + vec2(size.x, 0);
 
-	for (int i = 1; i <= seg_count; ++i) {
+	for (uint32_t i = 1; i <= seg_count; ++i) {
 		float theta = 2.f * M_PI * i / seg_count;
 		vec2 p1 = pos + vec2(cosf(theta), sinf(theta));
 
@@ -110,12 +110,12 @@ void DrawCommand::addFilledEllipse(const vec2& pos, const vec2& size, const Colo
 	uint32_t index = reservePrims(seg_count + 1, 3 * seg_count);
 
 	vertices.emplace_back(pos, col);
-	for (int i = 0; i < seg_count; ++i) {
+	for (uint32_t i = 0; i < seg_count; ++i) {
 		float theta = 2.f * M_PI * i / seg_count;
 		vertices.emplace_back(pos + size * vec2(cosf(theta), sinf(theta)), col);
 	}
 
-	for (int i = 1; i < seg_count; ++i) {
+	for (uint32_t i = 1; i < seg_count; ++i) {
 		indices.emplace_back(index);
 		indices.emplace_back(index + i);
 		indices.emplace_back(index + i + 1);
@@ -133,18 +133,18 @@ void DrawCommand::addFilledCapsule(const vec2& p0, const vec2& p1, float width, 
 	normal = vec2(-normal.y, normal.x);
 
 	vertices.emplace_back(p0, col);
-	for (int i = 0; i <= seg_count / 2; ++i) {
+	for (uint32_t i = 0; i <= seg_count / 2; ++i) {
 		float theta = 2.f * M_PI * i / seg_count;
 		vertices.emplace_back(p0 + glm::rotate(normal, theta), col);
 	}
 
 	vertices.emplace_back(p1, col);
-	for (int i = seg_count / 2; i <= seg_count; ++i) {
+	for (uint32_t i = seg_count / 2; i <= seg_count; ++i) {
 		float theta = 2.f * M_PI * i / seg_count;
 		vertices.emplace_back(p1 + glm::rotate(normal, theta), col);
 	}
 
-	for (int i = 1; i <= seg_count / 2; ++i) {
+	for (uint32_t i = 1; i <= seg_count / 2; ++i) {
 		indices.emplace_back(index);
 		indices.emplace_back(index + i);
 		indices.emplace_back(index + i + 1);
@@ -158,7 +158,7 @@ void DrawCommand::addFilledCapsule(const vec2& p0, const vec2& p1, float width, 
 	indices.emplace_back(index + off - 1);
 	indices.emplace_back(index + off + 1);
 
-	for (int i = 1; i <= seg_count / 2; ++i) {
+	for (uint32_t i = 1; i <= seg_count / 2; ++i) {
 		indices.emplace_back(index + off);
 		indices.emplace_back(index + off + i);
 		indices.emplace_back(index + off + i + 1);
@@ -173,14 +173,14 @@ void DrawCommand::addFilledHalfCapsule(const vec2& p, const vec2& mid, float wid
 	normal = vec2(-normal.y, normal.x);
 
 	vertices.emplace_back(p, col_p);
-	for (int i = 0; i <= seg_count / 2; ++i) {
+	for (uint32_t i = 0; i <= seg_count / 2; ++i) {
 		float theta = 2.f * M_PI * i / seg_count;
 		vertices.emplace_back(p + glm::rotate(normal, theta), col_p);
 	}
 	vertices.emplace_back(mid + normal, col_mid);
 	vertices.emplace_back(mid - normal, col_mid);
 
-	for (int i = 1; i <= seg_count / 2; ++i) {
+	for (uint32_t i = 1; i <= seg_count / 2; ++i) {
 		indices.emplace_back(index);
 		indices.emplace_back(index + i);
 		indices.emplace_back(index + i + 1);

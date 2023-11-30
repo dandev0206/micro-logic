@@ -106,12 +106,13 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)vk2d\include;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(SolutionDir)vk2d\lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;vk2d.lib;Comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;vk2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -124,6 +125,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)vk2d\include;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,25 +133,30 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(SolutionDir)vk2d\lib\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;vk2d.lib;Comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>vulkan-1.lib;vk2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="circuit_element.cpp" />
     <ClCompile Include="circuit_element_loader.cpp" />
     <ClCompile Include="command.cpp" />
+    <ClCompile Include="gui\custom_titlebar.cpp" />
     <ClCompile Include="gui\docking_window.cpp" />
     <ClCompile Include="gui\gui.cpp" />
     <ClCompile Include="gui\imgui_custom.cpp" />
     <ClCompile Include="gui\imgui_impl_vk2d.cpp" />
+    <ClCompile Include="gui\message_box.cpp" />
     <ClCompile Include="main_window.cpp" />
-    <ClCompile Include="gui\platform\windows_main_window.cpp" />
+    <ClCompile Include="gui\platform\platform_windows_impl.cpp" />
     <ClCompile Include="main.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="schematic_sheet.cpp" />
     <ClCompile Include="window\window_explorer.cpp" />
+    <ClInclude Include="gui\custom_titlebar.h" />
+    <ClInclude Include="gui\message_box.h" />
+    <ClInclude Include="micro_logic_config.h" />
     <ClInclude Include="window\window_explorer.h" />
     <ClCompile Include="window\window_history.cpp" />
     <ClCompile Include="window\window_library.cpp" />
@@ -176,7 +183,7 @@
     <ClInclude Include="window\window_library.h" />
     <ClInclude Include="main_window.h" />
     <ClInclude Include="icons.h" />
-    <ClInclude Include="gui\platform\windows_main_window.h" />
+    <ClInclude Include="gui\platform\platform_windows_impl.h" />
     <ClInclude Include="gui\imgui_custom.h" />
     <ClInclude Include="window\window_settings.h" />
     <ClInclude Include="window\window_sheet.h" />

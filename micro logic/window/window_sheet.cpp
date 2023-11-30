@@ -6,6 +6,7 @@
 #include <fstream>
 #include "../main_window.h"
 #include "../base64.h"
+#include "../micro_logic_config.h"
 
 static inline ImRect to_ImRect(const vk2d::Rect& rect)
 {
@@ -21,8 +22,7 @@ Window_Sheet::Window_Sheet() :
 	prev_position(0.f),
 	prev_scale(1.f),
 	capturing_mouse(false),
-	update_grid(true),
-	close_window(false)
+	update_grid(true)
 {}
 
 Window_Sheet::Window_Sheet(SchematicSheet& sheet) :
@@ -167,7 +167,7 @@ void Window_Sheet::sheetSaved()
 			break;
 	}
 
-	while (last_saved_command_max < command_stack.size() - 1) {
+	while (last_saved_command_max < (int64_t)command_stack.size() - 1) {
 		if (!command_stack[last_saved_command_max + 1]->isModifying())
 			last_saved_command_max += 1;
 		else
@@ -293,7 +293,7 @@ void Window_Sheet::pushCommand(std::unique_ptr<Command>&& cmd, bool skip_redo)
 
 void Window_Sheet::setCurrCommandTo(int64_t next_cmd)
 {
-	assert(-1 <= next_cmd && next_cmd < command_stack.size());
+	assert(-1 <= next_cmd && next_cmd < (int64_t)command_stack.size());
 	
 	bool modified = false;
 
@@ -478,18 +478,29 @@ void Window_Sheet::showDragRect(vk2d::Mouse::Button button)
 {
 	if (!ImGui::IsMouseDragging(button)) return;
 
-	ImVec2 p_min, p_max;
+	ImVec2 c_min   = viewport->Pos;
+	ImVec2 c_max   = viewport->Pos;
+	ImVec2 p_min   = viewport->Pos;
+	ImVec2 p_max   = viewport->Pos;
+	ImVec2 padding = ImGui::GetStyle().WindowPadding;
 
 	auto* draw_list = ImGui::GetForegroundDrawList(viewport);
 	auto rect       = getDragRect(button);
 
-	p_min.x = viewport->Pos.x + rect.left;
-	p_min.y = viewport->Pos.y + rect.top;
-	p_max.x = viewport->Pos.x + rect.left + rect.width;
-	p_max.y = viewport->Pos.y + rect.top + rect.height;
+	c_min.x += content_rect.left - padding.x;
+	c_min.y += content_rect.top - padding.y;
+	c_max.x += content_rect.left + content_rect.width + padding.x;
+	c_max.y += content_rect.top + content_rect.height + padding.y;
 
+	p_min.x += rect.left;
+	p_min.y += rect.top;
+	p_max.x += rect.left + rect.width;
+	p_max.y += rect.top + rect.height;
+
+	draw_list->PushClipRect(c_min, c_max);
 	draw_list->AddRectFilled(p_min, p_max, ImColor(0.8f, 0.8f, 0.8f, 0.1f));
 	draw_list->AddRect(p_min, p_max, ImColor(0.7f, 0.7f, 0.7f), 0, 0, 3.f);
+	draw_list->PopClipRect();
 }
 
 void Window_Sheet::setPosition(const vec2& pos)

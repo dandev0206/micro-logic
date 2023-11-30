@@ -62,30 +62,50 @@ static void set_process_dpi_aware()
 	}
 }
 
-static DWORD create_style(Window::Style style)
+static DWORD create_style(int32_t style)
 {
-	DWORD dwstyle = WS_POPUP;
-
+	DWORD dw_style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+	
 	if (style & Window::Style::Resizable)
-		dwstyle |= WS_THICKFRAME;
+		dw_style |= WS_THICKFRAME;
 
 	if (style & Window::Style::Minimize)
-		dwstyle |= WS_CAPTION | WS_MINIMIZE;
+		dw_style |= WS_CAPTION | WS_MINIMIZEBOX;
 
 	if (style & Window::Style::Maximize)
-		dwstyle |= WS_CAPTION | WS_MAXIMIZE;
+		dw_style |= WS_CAPTION | WS_MAXIMIZEBOX;
 	
 	if (style & Window::Style::Close)
-		dwstyle |= WS_CAPTION | WS_SYSMENU;
+		dw_style |= WS_CAPTION | WS_SYSMENU;
 
-	return dwstyle;
+	if (!(dw_style & WS_CAPTION))
+		dw_style |= WS_POPUP;
+
+	return dw_style;
 }
 
-static uvec2 get_client_size(HWND hwnd)
+static DWORD create_ex_style(int32_t style)
+{
+	DWORD dw_ex_style = WS_EX_APPWINDOW;
+
+	if (style & Window::Style::TopMost)
+		dw_ex_style |= WS_EX_TOPMOST;
+
+	return dw_ex_style;
+}
+
+static iRect get_window_rect(HWND hwnd)
+{
+	RECT rect;
+	GetWindowRect(hwnd, &rect);
+	return { RECT_POS(rect), RECT_SIZE(rect)};
+}
+
+static iRect get_client_rect(HWND hwnd)
 {
 	RECT rect;
 	GetClientRect(hwnd, &rect);
-	return { RECT_SIZE(rect) };
+	return { RECT_POS(rect), RECT_SIZE(rect) };
 }
 
 static void setTracking(HWND hwnd, bool track)
@@ -168,49 +188,53 @@ static void registerWindowClass() {
 
 class WindowImpl : public WindowImplBase {
 public:
-	WindowImpl(uint32_t width, uint32_t height, const char* title, Window::Style style) :
+	WindowImpl(uint32_t width, uint32_t height, const char* title, const WindowImpl* parent, int32_t style) :
 		WindowImplBase(),
 		hwnd(nullptr),
-		resizing(false) {
+		is_mouse_inside(false),
+		is_resizing(false),
+		surrogate(0),
+		key_repeat_enabled(true) {
 
 		if (window_counter++ == 0) {
 			registerWindowClass();
 			set_process_dpi_aware();
 		}
 
-		DWORD dwstyle = create_style(style);
+		DWORD dw_style    = create_style(style);
+		DWORD dw_ex_style = create_ex_style(style);
 
 		HDC screenDC = GetDC(NULL);
 		int32_t left = (GetDeviceCaps(screenDC, HORZRES) - (int32_t)(width)) / 2;
 		int32_t top  = (GetDeviceCaps(screenDC, VERTRES) - (int32_t)(height)) / 2;
 		ReleaseDC(NULL, screenDC);
 
-		RECT window_rect = { 0, 0, (LONG)width, (LONG)height };
-		AdjustWindowRect(&window_rect, dwstyle, false);
+		RECT rect = { 0, 0, (LONG)width, (LONG)height };
+		AdjustWindowRectEx(&rect, dw_style, false, dw_ex_style);
 
 		hwnd = CreateWindowEx(
-			style & Window::Style::TopMost ? WS_EX_TOPMOST : WS_EX_OVERLAPPEDWINDOW,
+			dw_ex_style,
 			WNDCLASSNAME,
 			title,
-			dwstyle,
+			dw_style,
 			left,
 			top,
-			RECT_WIDTH(window_rect),
-			RECT_HEIGHT(window_rect),
-			NULL,
+			RECT_WIDTH(rect),
+			RECT_HEIGHT(rect),
+			parent ? parent->hwnd : NULL,
 			NULL,
 			GetModuleHandle(NULL),
 			this);
 
-		RECT client_rect;
-		GetClientRect(hwnd, &client_rect);
-
-		position    = { RECT_POS(client_rect) };
-		size        = { width, height };
-		this->title = title;
-
 		if (style & Window::Style::Visible)
 			ShowWindow(hwnd, SW_SHOW);
+
+		auto window_rect = get_window_rect(hwnd);
+
+		position    = window_rect.getPosition();
+		size        = window_rect.getSize();
+		fb_size     = { width, height };
+		this->title = title;
 
 		{
 			auto& inst = VKInstance::get();
@@ -240,8 +264,7 @@ public:
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
-		}
-		else {
+		} else {
 			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
@@ -284,12 +307,21 @@ public:
 
 	void setSize(const glm::uvec2& size) {
 		if (this->size != size) {
-			this->size = size;
 
-			RECT rect = { 0, 0, (LONG)size.x, (LONG)size.y };
-			AdjustWindowRect(&rect, (DWORD)GetWindowLongPtr(hwnd, GWL_STYLE), false);
-			SetWindowPos(hwnd, nullptr, 0, 0, RECT_SIZE(rect), SWP_NOMOVE);
+			SetWindowPos(hwnd, nullptr, 0, 0, size.x, size.y, SWP_NOMOVE);
+			update_swapchain = true;
+		}
+	}
+
+	void setFBSize(const glm::uvec2& size) {
+		if (this->fb_size != size) {
+			RECT rect{ 0.f, 0.f, size.x, size.y };
 			
+			auto style    = GetWindowLong(hwnd, GWL_STYLE);
+			auto ex_style = GetWindowLong(hwnd, GWL_EXSTYLE);
+
+			AdjustWindowRectEx(&rect, style, false, ex_style);
+			SetWindowPos(hwnd, nullptr, 0, 0, RECT_SIZE(rect), SWP_NOMOVE);
 			update_swapchain = true;
 		}
 	}
@@ -304,6 +336,17 @@ public:
 		}
 
 		SetLayeredWindowAttributes(hwnd, 0, (BYTE)(255.99f * value), LWA_ALPHA);
+	}
+
+	void setVisible(bool value) {
+		if (visible != value) {
+			visible = value;
+
+			if (visible)
+				ShowWindow(hwnd, SW_SHOW);
+			else
+				ShowWindow(hwnd, SW_HIDE);
+		}
 	}
 
 	void setTitle(const char* title) {
@@ -330,9 +373,9 @@ public:
 public:
 	HWND hwnd;
 	bool is_mouse_inside;
-	bool resizing;
+	bool is_resizing;
 	uint16_t surrogate;
-	bool key_repeat_enabled = true;
+	bool key_repeat_enabled;
 };
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -349,7 +392,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 		return 0;
 	}
 	case WM_SIZE: {
-		uvec2 size = get_client_size(hwnd);
+		uvec2 size    = get_window_rect(hwnd).getSize();
+		uvec2 fb_size = get_client_rect(hwnd).getSize();
 
 		if (wParam == SIZE_MINIMIZED) {
 			window->minimized = true;
@@ -362,14 +406,18 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			window->maximized = false;
 		}
 
-		if (wParam != SIZE_MINIMIZED && !window->resizing && window->size != size) {
-			window->size = size;
+		if (window->size != size || window->fb_size != fb_size) {
+			window->size             = size;
+			window->fb_size          = fb_size;
+			window->update_swapchain = true;
+
+			if (wParam == SIZE_MINIMIZED || window->is_resizing) break;
 
 			Event e{ Event::Resize };
-			e.resize.size = window->size;
+			e.resize.size    = window->size;
+			e.resize.fb_size = window->fb_size;
 			window->events.push(e);
 
-			window->update_swapchain = true;
 		}
 	} break;
 	case WM_MOVE: {
@@ -380,18 +428,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 		window->events.push(e);
 	} break;
 	case WM_ENTERSIZEMOVE: {
-		window->resizing = true;
+		window->is_resizing = true;
 	} break;
 	case WM_EXITSIZEMOVE: {
-		window->resizing = false;
+		window->is_resizing = false;
 
-		uvec2 size = get_client_size(hwnd);
+		uvec2 size    = get_window_rect(hwnd).getSize();
+		uvec2 fb_size = get_client_rect(hwnd).getSize();
 
-		if (window->size != size) {
-			window->size = size;
+		if (window->size != size || window->fb_size != fb_size) {
+			window->size    = size;
+			window->fb_size = fb_size;
 
 			Event e{ Event::Resize };
-			e.resize.size = window->size;
+			e.resize.size    = window->size;
+			e.resize.fb_size = window->fb_size;
 			window->events.push(e);
 
 			window->update_swapchain = true;
@@ -580,6 +631,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 		if (LOWORD(lParam) == HTCLIENT)
 			Cursor::updateCursor();
 	} break;
+	case WM_ERASEBKGND: {
+		return 1;
+	}
 	}
 
 	return DefWindowProc(hwnd, msg, wParam, lParam);

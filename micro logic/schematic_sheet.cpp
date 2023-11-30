@@ -1,5 +1,6 @@
 #include "schematic_sheet.h"
 
+#include "micro_logic_config.h"
 #include <algorithm>
 
 SchematicSheet::SchematicSheet() :

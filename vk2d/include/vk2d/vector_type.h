@@ -22,9 +22,4 @@ using uvec4  = glm::uvec4;
 using mat3x3 = glm::mat3x3;
 using mat4x4 = glm::mat4x4;
 
-template <class T>
-T clamp(const T& val, const T& min, const T& max) {
-	return std::min(std::max(val, min), max);
-}
-
 VK2D_END

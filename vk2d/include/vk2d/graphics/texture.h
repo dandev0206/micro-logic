@@ -24,6 +24,7 @@ public:
 
 	void resize(uint32_t width, uint32_t height, const Color& color = Colors::Black);
 	void resize(const uvec2& size);
+	
 	void destroy();
 
 	void update();

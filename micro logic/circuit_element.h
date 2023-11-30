@@ -60,6 +60,8 @@ public:
 
 class RigidElement abstract : public CircuitElement {
 public:
+	RigidElement();
+
 	AABB getAABB() const override;
 	bool hit(const AABB& aabb) const override;
 	bool hit(const vec2& pos) const override;
