@@ -60,6 +60,11 @@ public:
 	bool isVisible() const;
 	void setVisible(bool value);
 
+	bool isResizable() const;
+	void setResizable(bool value);
+
+	void setParent(const vk2d::Window& window = {});
+
 	const char* getTitle() const;
 	void setTitle(const char* title);
 

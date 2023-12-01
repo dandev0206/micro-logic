@@ -140,7 +140,7 @@ uvec2 Window::getFrameBufferSize() const
 
 void Window::setFrameBufferSize(const uvec2& size) const
 {
-	impl->setFBSize(size);
+	impl->setFraneBufferSize(size);
 }
 
 float Window::getTransparency() const
@@ -161,6 +161,24 @@ bool Window::isVisible() const
 void Window::setVisible(bool value)
 {
 	impl->setVisible(value);
+}
+
+bool Window::isResizable() const
+{
+	return impl->isResizable();
+}
+
+void Window::setResizable(bool value)
+{
+	return impl->setResizable(value);
+}
+
+void Window::setParent(const vk2d::Window& window)
+{
+	if (window.impl)
+		impl->setParent(nullptr);
+	else
+		impl->setParent(window.impl);
 }
 
 const char* Window::getTitle() const

@@ -66,10 +66,16 @@
     <ClCompile Include="window\window_explorer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gui\message_box.cpp">
+    <ClCompile Include="gui\custom_titlebar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gui\custom_titlebar.cpp">
+    <ClCompile Include="gui\dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\resizing_loop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dialogs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,7 +89,7 @@
     <ClInclude Include="main_window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui\platform\platform_windows_impl.h">
+    <ClInclude Include="gui\platform\platform_impl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="icons.h">
@@ -152,13 +158,22 @@
     <ClInclude Include="window\window_explorer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui\message_box.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="micro_logic_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gui\custom_titlebar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\stopwatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\resizing_loop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dialogs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

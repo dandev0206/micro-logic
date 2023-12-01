@@ -2,7 +2,7 @@
 
 #include <vk2d/system/window.h>
 #include <vk2d/graphics/texture_view.h>
-#include "dialog.h"
+#include "gui/dialog.h"
 
 class MessageBox : public Dialog {
 public:

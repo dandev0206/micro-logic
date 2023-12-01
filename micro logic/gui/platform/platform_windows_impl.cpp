@@ -1,22 +1,28 @@
-#include "platform_windows_impl.h"
-#include "../../main_window.h"
+#include "platform_impl.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
 #include <windowsx.h>
 #include <dwmapi.h>
+#include "platform_impl.h"
 
 #pragma comment(lib, "dwmapi.lib")
 
 struct TitlebarWindowData {
 	const vk2d::Window*   window;
 	const CustomTitleBar* titlebar;
-	LONG_PTR              originalProc;
+	LONG_PTR              original_proc;
+};
+
+struct ResizingLoopData {
+	const vk2d::Window* window;
+	ResizingLoop*       loop;
+	LONG_PTR            original_proc;
 };
 
 static std::map<HWND, TitlebarWindowData> titlebar_datas;
-static LONG_PTR main_window_original_proc = NULL;
+static std::map<HWND, ResizingLoopData>   resizing_loop_datas;
 
 static bool is_window_minimized(HWND hwnd) 
 {
@@ -45,46 +51,9 @@ static bool composition_enabled()
 	return composition_enabled && success;
 }
 
-LRESULT CALLBACK newProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static void redraw_frame(HWND hwnd) 
 {
-	switch (msg) {
-	case WM_NCHITTEST: {
-		if (MainWindow::get().resize_tab_hovered)
-			return HTBOTTOMRIGHT;
-	} break;
-	case WM_SIZE: {
-		if (!wParam && is_window_maximized(hwnd)) return 0;
-	} break;
-	case WM_SIZING: {
-		auto& main_window = MainWindow::get();
-
-		if (!main_window.initialized) break;
-
-		auto& rect = *reinterpret_cast<RECT*>(lParam);
-		
-		uvec2 size(rect.right - rect.left, rect.bottom - rect.top);
-
-		vk2d::Event e{ vk2d::Event::Resize };
-		e.resize.size = size;
-
-		auto dt = main_window.getDeltaTime();
-
-		SetWindowPos(hwnd, NULL, 0, 0, size.x, size.y, SWP_NOMOVE | SWP_NOZORDER);
-		main_window.eventProc(e, dt);
-		main_window.loop(dt);
-		return TRUE;
-	} break;
-	case WM_GETMINMAXINFO: {
-		auto caption_rect = titlebar_datas[hwnd].titlebar->getCaptionRect();
-
-		LPMINMAXINFO info = (LPMINMAXINFO)lParam;
-		info->ptMinTrackSize.x = (LONG)caption_rect.left + 180;
-		info->ptMinTrackSize.y = 120;
-
-		return 0;
-	}
-	}
-	return CallWindowProc(reinterpret_cast<WNDPROC>(main_window_original_proc), hwnd, msg, wParam, lParam);
+	SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
 }
 
 LRESULT CALLBACK titleBarProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
@@ -108,6 +77,7 @@ LRESULT CALLBACK titleBarProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if (!GetMonitorInfoW(monitor, &monitor_info)) return 0;
 
 			requested_client_rect = monitor_info.rcWork;
+			requested_client_rect.bottom -= 1;
 
 			//UINT dpi    = GetDpiForWindow(hwnd);
 			//int frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi);
@@ -198,18 +168,59 @@ LRESULT CALLBACK titleBarProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	} break;
 	}
 
-	return CallWindowProc(reinterpret_cast<WNDPROC>(td.originalProc), hwnd, msg, wParam, lParam);
+	return CallWindowProc(reinterpret_cast<WNDPROC>(td.original_proc), hwnd, msg, wParam, lParam);
 }
 
-void InjectTitleBar(const vk2d::Window& window, const CustomTitleBar& titlebar)
+LRESULT CALLBACK resizingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	HWND hwnd = (HWND)window.getNativeHandle();
+	auto& rld = resizing_loop_datas[hwnd];
+
+	switch (msg) {
+	case WM_NCHITTEST: {
+		if (rld.loop->resize_tab_hovered)
+			return HTBOTTOMRIGHT;
+	} break;
+	case WM_SIZE: {
+		if (!wParam && is_window_maximized(hwnd)) return 0;
+	} break;
+	case WM_SIZING: {
+		auto& rect = *reinterpret_cast<RECT*>(lParam);
+
+		uvec2 size(rect.right - rect.left, rect.bottom - rect.top);
+
+		vk2d::Event e{ vk2d::Event::Resize };
+		e.resize.size = size;
+
+		auto dt = rld.loop->delta_time;
+
+		SetWindowPos(hwnd, NULL, 0, 0, size.x, size.y, SWP_NOMOVE | SWP_NOZORDER);
+		rld.loop->eventProc(e);
+		rld.loop->loop();
+		return TRUE;
+	} break;
+	case WM_GETMINMAXINFO: {
+		auto caption_rect = titlebar_datas[hwnd].titlebar->getCaptionRect();
+
+		LPMINMAXINFO info = (LPMINMAXINFO)lParam;
+		info->ptMinTrackSize.x = (LONG)caption_rect.left + 180;
+		info->ptMinTrackSize.y = 120;
+
+		return 0;
+	}
+	}
+	return CallWindowProc(reinterpret_cast<WNDPROC>(rld.original_proc), hwnd, msg, wParam, lParam);
+}
+
+void InjectTitleBar(CustomTitleBar* titlebar)
+{
+	auto& window = titlebar->getWindow();
+	auto hwnd    = (HWND)window.getNativeHandle();
 
 	auto& td = titlebar_datas[hwnd];
 
 	td.window       = &window;
-	td.titlebar     = &titlebar;
-	td.originalProc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
+	td.titlebar     = titlebar;
+	td.original_proc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
 
 	SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)titleBarProc);
 
@@ -226,16 +237,20 @@ void InjectTitleBar(const vk2d::Window& window, const CustomTitleBar& titlebar)
 
 	SetWindowLong(hwnd, GWL_STYLE, style);
 
-	SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
+	redraw_frame(hwnd);
 }
 
-void InjectWndProc(MainWindow* main_window)
+void InjectResizingLoop(const vk2d::Window& window, ResizingLoop* resizing_loop)
 {
-	HWND hwnd = (HWND)main_window->window.getNativeHandle();
+	HWND hwnd = (HWND)window.getNativeHandle();
 
-	main_window_original_proc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
-	SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)newProc);
+	auto& rld = resizing_loop_datas[hwnd];
 
-	// redraw frame
-	SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
+	rld.window        = &window;
+	rld.loop          = resizing_loop;
+	rld.original_proc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
+
+	SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)resizingProc);
+
+	redraw_frame(hwnd);
 }

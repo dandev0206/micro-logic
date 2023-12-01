@@ -1,21 +1,20 @@
-#include "message_box.h"
+#include "dialogs.h"
 
 #include <imgui_internal.h>
 #include <thread>
-#include "imgui_impl_vk2d.h"
-#include "../micro_logic_config.h"
+#include "gui/imgui_impl_vk2d.h"
 
-static std::vector<std::string> split_str(const std::string& str, char ch) 
+static std::vector<std::string> split_str(const std::string& str, char ch)
 {
 	std::vector<std::string> result;
 
 	size_t first = 0;
-	size_t last  = str.find(ch);
+	size_t last = str.find(ch);
 
 	while (last != std::string::npos) {
 		result.push_back(str.substr(first, last - first));
 		first = last + 1;
-		last  = str.find(ch, first);
+		last = str.find(ch, first);
 	}
 
 	result.push_back(str.substr(first, std::min(last, str.size()) - first + 1));
@@ -30,12 +29,12 @@ static ImVec2 calc_buttons_size(const std::vector<std::string>& button_names)
 	auto buttons_size = ImVec2(0.f, 0.f);
 	for (const auto& name : button_names) {
 		auto text_size = ImGui::CalcTextSize(name.c_str(), nullptr, true);
-		auto size      = ImVec2(text_size.x + 2.f * style.FramePadding.x, text_size.y + 2.f * style.FramePadding.y);
+		auto size = ImVec2(text_size.x + 2.f * style.FramePadding.x, text_size.y + 2.f * style.FramePadding.y);
 
 		size = ImGui::CalcItemSize(ImVec2(100, 40), size.x, size.y);
 
 		buttons_size.x += size.x + style.ItemSpacing.x;
-		buttons_size.y  = size.y;
+		buttons_size.y = size.y;
 	}
 	buttons_size.x -= style.ItemSpacing.x;
 
@@ -46,7 +45,7 @@ MessageBox::MessageBox() :
 	Dialog(false)
 {}
 
-std::string MessageBox::showDialog() 
+std::string MessageBox::showDialog()
 {
 	using namespace std::chrono;
 
@@ -61,9 +60,9 @@ std::string MessageBox::showDialog()
 
 	auto& style = ImGui::GetStyle();
 
-	auto button_names  = split_str(buttons, ';');
-	auto buttons_size  = calc_buttons_size(button_names);
-	auto result        = std::string("Error");
+	auto button_names = split_str(buttons, ';');
+	auto buttons_size = calc_buttons_size(button_names);
+	auto result = std::string("Error");
 
 	ImVec2 text_size = ImGui::CalcTextSize(content.c_str(), nullptr, false, 0.f);
 	ImVec2 window_size;
@@ -74,9 +73,10 @@ std::string MessageBox::showDialog()
 
 	float title_height = ImGui::GetFontSize() + 20;
 	ImVec2 client_size = ImVec2(window_size.x, window_size.y - title_height);
-	
+
 	window.setTitle(title.c_str());
 	window.setSize((uvec2)to_vec2(window_size));
+	titlebar.setButtonStyle(false, false, true);
 	titlebar.setCaptionRect({ 0.f, 0.f, window_size.x, title_height });
 	window.setVisible(true);
 
@@ -92,21 +92,14 @@ std::string MessageBox::showDialog()
 
 		ImGui::VK2D::Update(window, getDeltaTime());
 
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-		if (ImGui::BeginMainMenuBar()) {
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.f, 1.f, 1.f, 1.f));
+		if (titlebar.beginTitleBar()) {
 			ImGui::TextUnformatted(title.c_str());
-			titlebar.showButtons();
-			ImGui::PopStyleColor(3);
-			ImGui::EndMainMenuBar();
+			titlebar.endTitleBar();
 		}
-		ImGui::PopStyleVar();
 
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 1.f));
 		ImGui::Begin("MessageBox", nullptr, flags);
-		ImGui::SetWindowPos(ImVec2(0.f, title_height)); 
+		ImGui::SetWindowPos(ImVec2(0.f, title_height));
 		ImGui::SetWindowSize(client_size);
 
 		ImGui::SetCursorPos(ImVec2(20, 20));

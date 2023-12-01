@@ -5,6 +5,7 @@
 #include "imgui_custom.h"
 #include "../vector_type.h"
 #include "../micro_logic_config.h"
+#include "platform/platform_impl.h"
 
 #define ICON_MINIMIZE button_icons, { 20, 0, 160, 100 }
 #define ICON_MAXIMIZE button_icons, { 220, 0, 160, 100 }
@@ -32,20 +33,45 @@ CustomTitleBar::~CustomTitleBar()
 		button_icons.destroy();
 }
 
-void CustomTitleBar::showButtons()
+void CustomTitleBar::bindWindow(vk2d::Window& window)
 {
-	static const int title_height = 23;
+	this->window = &window;
+	InjectTitleBar(this);
+}
 
-	vec2 button_size(title_height * 1.52, title_height);
-	vec2 button_frame_size(button_size.x + 20, button_size.y + 20);
+void CustomTitleBar::setButtonStyle(bool minimize, bool maximize, bool close)
+{
+	button_style = minimize << 0 | maximize << 1 | close << 2;
+}
+
+vk2d::Window& CustomTitleBar::getWindow() const
+{
+	return *window;
+}
+
+bool CustomTitleBar::beginTitleBar()
+{
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+	return ImGui::BeginMainMenuBar();
+}
+
+void CustomTitleBar::endTitleBar()
+{
+	auto title_height  = ImGui::GetFrameHeight();
+
+	vec2 button_size(title_height * 1.6f, title_height);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.f, 1.f, 1.f, 1.f));
 
 	hovered_button = TitleButton::None;
-	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-
+	
 	auto cursor_pos_x = ImGui::GetWindowSize().x;
-
 	if (button_style & (uint32_t)TitleButton::Close) {
-		ImGui::SetCursorPos(ImVec2(cursor_pos_x -= button_frame_size.x, 0.f));
+		ImGui::SetCursorPos(ImVec2(cursor_pos_x -= button_size.x, 0.f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.83f, 0.13f, 0.2f, 1.f));
 		ImGui::ImageButton(ICON_CLOSE, button_size);
 		if (ImGui::IsItemHovered())
@@ -53,32 +79,21 @@ void CustomTitleBar::showButtons()
 		ImGui::PopStyleColor();
 	}
 	if (button_style & (uint32_t)TitleButton::Maximize) {
-		ImGui::SetCursorPos(ImVec2(cursor_pos_x -= button_frame_size.x, 0.f));
+		ImGui::SetCursorPos(ImVec2(cursor_pos_x -= button_size.x, 0.f));
 		ImGui::ImageButton(ICON_MAXIMIZE, button_size);
 		if (ImGui::IsItemHovered())
 			hovered_button = TitleButton::Maximize;
 	}
 	if (button_style & (uint32_t)TitleButton::Minimize) {
-		ImGui::SetCursorPos(ImVec2(cursor_pos_x -= button_frame_size.x, 0.f));
+		ImGui::SetCursorPos(ImVec2(cursor_pos_x -= button_size.x, 0.f));
 		ImGui::ImageButton(ICON_MINIMIZE, button_size);
 		if (ImGui::IsItemHovered())
 			hovered_button = TitleButton::Minimize;
 	}
 
-	ImGui::PopStyleVar(1);
-}
-
-void CustomTitleBar::showButtonsWithMenu()
-{
-	if (ImGui::BeginMainMenuBar()) {
-		showButtons();
-		ImGui::EndMainMenuBar();
-	}
-}
-
-void CustomTitleBar::setButtonStyle(bool minimize, bool maximize, bool close)
-{
-	button_style = minimize << 0 | maximize << 1 | close << 2;
+	ImGui::PopStyleColor(3);
+	ImGui::PopStyleVar(3);
+	ImGui::EndMainMenuBar();
 }
 
 Rect CustomTitleBar::getCaptionRect() const

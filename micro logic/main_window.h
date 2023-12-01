@@ -5,16 +5,16 @@
 #include <vk2d/graphics/texture.h>
 #include <vk2d/system/font.h>
 #include <chrono>
+#include "gui/custom_titlebar.h"
+#include "gui/resizing_loop.h"
 #include "window/window_settings.h"
 #include "window/window_sheet.h"
 #include "window/window_library.h"
 #include "window/window_history.h"
 #include "window/window_explorer.h"
 #include "side_menu.h"
-#include "gui/custom_titlebar.h"
-#include "gui/message_box.h"
 
-class MainWindow {
+class MainWindow : public ResizingLoop {
 private:
 	static MainWindow* main_window;
 
@@ -34,8 +34,9 @@ public:
 
 	void show();
 
-	void loop(float dt);
-	void eventProc(const vk2d::Event& e, float dt);
+	void loop() override;
+	void eventProc(const vk2d::Event& e) override;
+
 	void closeWindowDialog();
 
 	void initializeProject();
@@ -81,8 +82,6 @@ public:
 	bool isUndoable();
 
 	void beginClipboardPaste();
-
-	float getDeltaTime();
 
 public:
 	void showMainMenus();
@@ -149,12 +148,8 @@ public: // windows
 	Window_History  window_history;
 	Window_Explorer window_explorer;
 
-	MessageBox msg_box;
-
 public:
 	CustomTitleBar titlebar;
-
-	bool resize_tab_hovered;
 
 	bool want_open_project;
 	bool want_close_window;

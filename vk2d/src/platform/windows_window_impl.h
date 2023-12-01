@@ -313,7 +313,7 @@ public:
 		}
 	}
 
-	void setFBSize(const glm::uvec2& size) {
+	void setFraneBufferSize(const glm::uvec2& size) {
 		if (this->fb_size != size) {
 			RECT rect{ 0.f, 0.f, size.x, size.y };
 			
@@ -347,6 +347,30 @@ public:
 			else
 				ShowWindow(hwnd, SW_HIDE);
 		}
+	}
+
+	bool isResizable() {
+		return GetWindowLong(hwnd, GWL_STYLE) & WS_THICKFRAME;
+	}
+
+	void setResizable(bool value) {
+		auto style = GetWindowLong(hwnd, GWL_STYLE);
+
+		if ((style & WS_THICKFRAME) != value) {
+			if (value) {
+				style |= WS_THICKFRAME;
+			} else {
+				style &= ~WS_THICKFRAME;
+			}
+			SetWindowLong(hwnd, GWL_STYLE, style);
+		}
+	}
+
+	void setParent(WindowImpl* impl) {
+		if (impl)
+			SetParent(hwnd, impl->hwnd);
+		else
+			SetParent(hwnd, NULL);
 	}
 
 	void setTitle(const char* title) {

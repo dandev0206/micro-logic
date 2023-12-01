@@ -16,10 +16,13 @@ public:
 	CustomTitleBar();
 	~CustomTitleBar();
 
-	void showButtons();
-	void showButtonsWithMenu();
-
+	void bindWindow(vk2d::Window& window);
 	void setButtonStyle(bool minimize, bool maximize, bool close);
+
+	vk2d::Window& getWindow() const;
+
+	bool beginTitleBar();
+	void endTitleBar();
 
 	Rect getCaptionRect() const;
 	void setCaptionRect(const Rect& rect);
@@ -27,7 +30,8 @@ public:
 	TitleButton getHoveredButton() const;
 
 private:
-	TitleButton hovered_button;
-	uint32_t    button_style;
-	Rect        caption_rect;
+	vk2d::Window* window;
+	TitleButton   hovered_button;
+	uint32_t      button_style;
+	Rect          caption_rect;
 };

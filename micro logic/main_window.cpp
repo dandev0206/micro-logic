@@ -1,6 +1,6 @@
-#define ICON_TEXTURE_VAR textures[TEXTURE_ICONS_IDX]
-
 #include "main_window.h"
+
+#define ICON_TEXTURE_VAR textures[TEXTURE_ICONS_IDX]
 
 #include <vk2d/graphics/texture_view.h>
 #include <vk2d/system/clipboard.h>
@@ -15,13 +15,14 @@
 #include <iomanip>
 #include "gui/imgui_impl_vk2d.h"
 #include "gui/imgui_custom.h"
+#include "dialogs.h"
 #include "circuit_element_loader.h"
 #include "base64.h"
 #include "icons.h"
 #include "micro_logic_config.h"
 
 #ifdef _WIN32 
-#include "gui/platform/platform_windows_impl.h"
+#include "gui/platform/platform_impl.h"
 #endif
 
 #define STRINGIZE_DETAIL(x) #x
@@ -98,13 +99,7 @@ MainWindow::MainWindow() :
 	std::setlocale(LC_ALL, "");
 
 	window.create(1280, 800, "micro logic", vk2d::Window::Resizable);
-	msg_box.init(&window);
-
-#ifdef _WIN32 
-	InjectTitleBar(window, titlebar);
-	InjectTitleBar(msg_box.getWindow(), msg_box.getTitlebar());
-	InjectWndProc(this);
-#endif
+	titlebar.bindWindow(window);
 
 	{ // load font
 		font.loadFromFile(FONT_PATH);
@@ -171,11 +166,13 @@ MainWindow::MainWindow() :
 		//window_sheets[1].name = "Sheet1";
 	}
 
+	ResizingLoop::initResizingLoop(window);
 	window.setVisible(true);
 }
 
 MainWindow::~MainWindow()
 {
+	Dialog::destroyImpl();
 	main_window = nullptr;
 }
 
@@ -214,7 +211,6 @@ void MainWindow::initializeProject()
 		auto& style = ImGui::GetStyle();
 
 		style.Colors[ImGuiCol_WindowBg]           = ImVec4(0.f, 0.f, 0.f, 1.f);
-		//style.Colors[ImGuiCol_TitleBgActive]      = ImVec4(0.5f, 0.5f, 0.5f, 1.f);
 		style.Colors[ImGuiCol_Tab]                = ImVec4(0.20f, 0.20f, 0.20f, 1.f);
 		style.Colors[ImGuiCol_TabHovered]         = ImVec4(0.31f, 0.31f, 0.31f, 1.f);
 		style.Colors[ImGuiCol_TabActive]          = ImVec4(0.31f, 0.31f, 0.31f, 1.f);
@@ -244,6 +240,7 @@ void MainWindow::initializeProject()
 
 bool MainWindow::closeProjectDialog()
 {
+	MessageBox msg_box;
 	msg_box.title   = "closing project " + project_name;
 	msg_box.content = "current project is not saved, save?";
 	msg_box.buttons = "Yes;No;Cancel";
@@ -278,11 +275,9 @@ void MainWindow::closeProject()
 void MainWindow::show()
 {
 	while (true) {
-		float dt = getDeltaTime();
-
 		vk2d::Event e;
 		while (window.pollEvent(e))
-			eventProc(e, dt);
+			eventProc(e);
 
 		if (want_open_project) {
 			do {
@@ -308,18 +303,19 @@ void MainWindow::show()
 
 		ImGui::VK2D::ProcessViewportEvent(window);
 
-		loop(dt);
+		loop();
 
-		float delay = 1.f / FRAME_LIMIT - dt;
+		float delay = 1.f / FRAME_LIMIT - delta_time;
 		if (delay > 0) {
 			std::this_thread::sleep_for(std::chrono::microseconds((int)(1e6 * delay)));
 		}
 	}
 }
 
-void MainWindow::loop(float dt)
-{
-	ImGui::VK2D::Update(window, dt);
+void MainWindow::loop() {
+	ResizingLoop::loop();
+
+	ImGui::VK2D::Update(window, delta_time);
 
 	showMainMenus();
 	showStatusBar();
@@ -380,7 +376,7 @@ void MainWindow::loop(float dt)
 		saveProjectIni();
 }
 
-void MainWindow::eventProc(const vk2d::Event& e, float dt)
+void MainWindow::eventProc(const vk2d::Event& e)
 {
 	ImGui::VK2D::ProcessEvent(window, e);
 
@@ -396,7 +392,7 @@ void MainWindow::eventProc(const vk2d::Event& e, float dt)
 	}
 
 	if (curr_menu && curr_window_sheet)
-		getCurrentSideMenu().eventProc(e, dt);
+		getCurrentSideMenu().eventProc(e, delta_time);
 }
 
 void MainWindow::closeWindowDialog()
@@ -455,6 +451,7 @@ void MainWindow::openProject(const std::string& dir)
 			std::ifstream file(dir + "\\" + file_name);
 
 			if (!file.is_open()) {
+				MessageBox msg_box;
 				msg_box.title   = "Error";
 				msg_box.content = "cannot locate " + file_name;
 				msg_box.buttons = "OK";
@@ -468,6 +465,7 @@ void MainWindow::openProject(const std::string& dir)
 			updateThumbnail(*sheet);
 
 			if (elem->Attribute("guid") != sheet->guid) {
+				MessageBox msg_box;
 				msg_box.title   = "Error";
 				msg_box.content = "guid of sheet " + file_name + " is different";
 				msg_box.buttons = "OK";
@@ -865,27 +863,13 @@ void MainWindow::beginClipboardPaste()
 	}
 }
 
-float MainWindow::getDeltaTime()
-{
-	using microseconds = std::chrono::microseconds;
-
-	auto now = clock_t::now();
-	
-	float dt = (float)std::chrono::duration_cast<microseconds>(now - last_time).count() / 1e6f;
-	
-	last_time = now;
-
-	return dt;
-}
-
 void MainWindow::showMainMenus()
 {
-	auto spacing = ImGui::GetFrameHeight();
-	vec2 icon_size(spacing, spacing);
-	spacing *= 1.5;
+	if (titlebar.beginTitleBar()) {
+		auto spacing = ImGui::GetFrameHeight();
+		vec2 icon_size(spacing, spacing);
+		spacing *= 1.5;
 
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			ImGui::SetCursorPosX(spacing);
 			if (ImGui::BeginMenu("Recent...")) {
@@ -906,14 +890,14 @@ void MainWindow::showMainMenus()
 
 			ImGui::Separator();
 
-			if (curr_window_sheet && !curr_window_sheet->sheet->file_saved) {
+			if (curr_window_sheet) {
 				std::string save_str = "Save ";
 				save_str += curr_window_sheet->sheet->name;
 				save_str += "###MenuItemSave";
 
 				ImGui::Image(ICON_SAVE, icon_size);
 				ImGui::SameLine();
-				if (ImGui::MenuItem(save_str.c_str(), "Ctrl+S"))
+				if (ImGui::MenuItem(save_str.c_str(), "Ctrl+S", false, !curr_window_sheet->sheet->file_saved))
 					trySaveProject();
 			} else {
 				ImGui::Image(ICON_SAVE, icon_size, vk2d::Colors::Gray);
@@ -1065,13 +1049,11 @@ void MainWindow::showMainMenus()
 
 		auto cursor_x = ImGui::GetCursorPosX();
 		auto width    = ImGui::GetWindowWidth();
-		auto height    = ImGui::GetWindowHeight();
+		auto height   = ImGui::GetWindowHeight();
 
-		titlebar.setCaptionRect({ cursor_x, 0.f, width - cursor_x, height});
-		titlebar.showButtons();
-		ImGui::EndMainMenuBar();
+		titlebar.setCaptionRect({ cursor_x, 0.f, width - cursor_x - 10, height});
+		titlebar.endTitleBar();
 	}
-	ImGui::PopStyleVar();
 }
 
 void MainWindow::showUpperMenus()
