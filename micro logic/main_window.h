@@ -37,18 +37,16 @@ public:
 	void loop() override;
 	void eventProc(const vk2d::Event& e) override;
 
-	void closeWindowDialog();
+	bool closeWindow();
 
 	void initializeProject();
-	bool closeProjectDialog();
-	void closeProject();
-	void openProjectDialog();
-	void openProject(const std::string& dir);
-	bool saveProjectDialog();
-	void saveProject();
+	bool openProject();
+	bool saveProject(bool save_sheet, bool save_as = false);
+	bool closeProject();
+	bool openProjectImpl(const std::string& project_path);
+	bool closeProjectImpl();
 	void loadProjectIni();
 	void saveProjectIni();
-	bool trySaveProject();
 	bool isProjectOpened() const;
 	bool isProjectAllSaved() const;
 	bool isProjectEmpty() const;
@@ -154,7 +152,7 @@ public:
 	bool want_open_project;
 	bool want_close_window;
 
-	std::string new_project_dir;
+	std::string new_project_path;
 
 	bool initialized;
 };

@@ -176,9 +176,9 @@ void Window::setResizable(bool value)
 void Window::setParent(const vk2d::Window& window)
 {
 	if (window.impl)
-		impl->setParent(nullptr);
-	else
 		impl->setParent(window.impl);
+	else
+		impl->setParent(nullptr);
 }
 
 const char* Window::getTitle() const

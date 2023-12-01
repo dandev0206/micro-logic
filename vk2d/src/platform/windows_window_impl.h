@@ -64,7 +64,7 @@ static void set_process_dpi_aware()
 
 static DWORD create_style(int32_t style)
 {
-	DWORD dw_style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+	DWORD dw_style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
 	
 	if (style & Window::Style::Resizable)
 		dw_style |= WS_THICKFRAME;
@@ -77,9 +77,6 @@ static DWORD create_style(int32_t style)
 	
 	if (style & Window::Style::Close)
 		dw_style |= WS_CAPTION | WS_SYSMENU;
-
-	if (!(dw_style & WS_CAPTION))
-		dw_style |= WS_POPUP;
 
 	return dw_style;
 }
@@ -368,9 +365,9 @@ public:
 
 	void setParent(WindowImpl* impl) {
 		if (impl)
-			SetParent(hwnd, impl->hwnd);
+			SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, (LONG_PTR)impl->hwnd);
 		else
-			SetParent(hwnd, NULL);
+			SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, NULL);
 	}
 
 	void setTitle(const char* title) {

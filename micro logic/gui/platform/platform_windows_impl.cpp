@@ -224,7 +224,7 @@ void InjectTitleBar(CustomTitleBar* titlebar)
 
 	SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)titleBarProc);
 
-	MARGINS shadow_rect{ 1, 1, 1, 1 };
+	MARGINS shadow_rect{ 0, 0, 1, 0 };
 	DwmExtendFrameIntoClientArea(hwnd, &shadow_rect);
 	
 	LONG style = GetWindowLong(hwnd, GWL_STYLE);

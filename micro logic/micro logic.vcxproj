@@ -147,6 +147,7 @@
     <ClCompile Include="gui\gui.cpp" />
     <ClCompile Include="gui\imgui_custom.cpp" />
     <ClCompile Include="gui\imgui_impl_vk2d.cpp" />
+    <ClCompile Include="gui\platform\system_folder.cpp" />
     <ClCompile Include="main_window.cpp" />
     <ClCompile Include="gui\platform\platform_windows_impl.cpp" />
     <ClCompile Include="main.cpp">
@@ -155,6 +156,8 @@
     </ClCompile>
     <ClCompile Include="gui\resizing_loop.cpp" />
     <ClCompile Include="schematic_sheet.cpp" />
+    <ClInclude Include="gui\platform\system_folder.h" />
+    <ClInclude Include="util\convert_string.h" />
     <ClCompile Include="window\window_explorer.cpp" />
     <ClInclude Include="dialogs.h" />
     <ClInclude Include="gui\custom_titlebar.h" />

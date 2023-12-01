@@ -10,3 +10,8 @@
 #define MAX_SCALE 20.f
 
 #define TEXTURE_ICONS_IDX 0
+
+#define PROJECT_EXT ".mlp"
+#define PROJECT_EXTW L".mlp"
+#define SCHEMATIC_SHEET_EXT ".mls"
+#define SCHEMATIC_SHEET_EXTW L".mls"
