@@ -145,23 +145,6 @@ MainWindow::MainWindow() :
 	initializeProject();
 	ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
 
-	{
-		// openProject("C:\\Users\\j0994\\OneDrive\\¹ÙÅÁ È­¸é\\Untitled0");
-		//sheets.resize(2);
-		//sheets[0].name = "Sheet0";
-		//sheets[0].guid = create_guid();
-		//sheets[1].name = "Sheet1";
-		//sheets[1].guid = create_guid();
-
-		//window_sheets.resize(2);
-		//window_sheets[0].bindSchematicSheet(sheets[0]);
-		//window_sheets[0].show = true;
-		//window_sheets[0].name = "Sheet0";
-		//window_sheets[1].bindSchematicSheet(sheets[1]);
-		//window_sheets[1].show = true;
-		//window_sheets[1].name = "Sheet1";
-	}
-
 	ResizingLoop::initResizingLoop(window);
 	window.setVisible(true);
 }
@@ -1397,36 +1380,6 @@ void MainWindow::showSideMenus()
 
 		ImGui::End();
 	}
-}
-
-void MainWindow::showSheets()
-{
-	//{
-	//	auto* dc = &ImGui::GetCurrentContext()->DockContext;
-
-	//	for (int n = 0; n < dc->Nodes.Data.Size; n++) {
-	//		ImGuiDockNode* node = (ImGuiDockNode*)dc->Nodes.Data[n].val_p;
-
-	//		if (node && node->IsEmpty()) {
-	//			auto* draw_list = ImGui::GetForegroundDrawList();
-
-	//			ImVec2 max(node->Pos.x + node->Size.x, node->Pos.y + node->Size.y);
-
-	//			draw_list->AddRect(node->Pos, max, 0xffffffff, 0, 0, 5);
-	//			break;
-	//		}
-	//	}
-	//}
-
-	auto flags = ImGuiWindowFlags_NoDecoration;
-	ImGui::Begin("##Sheets", nullptr, flags);
-
-	if (ImGui::BeginTabBar("##Sheets Tabs")) {
-
-		ImGui::EndTabBar();
-	}
-
-	ImGui::End();
 }
 
 void MainWindow::showFPS()

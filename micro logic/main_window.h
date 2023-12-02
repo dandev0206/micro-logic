@@ -88,7 +88,6 @@ public:
 	void showUpperMenus();
 	void showStatusBar();
 	void showSideMenus();
-	void showSheets();
 	void showFPS();
 
 public: // settings
