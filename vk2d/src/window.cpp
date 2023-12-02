@@ -143,6 +143,26 @@ void Window::setFrameBufferSize(const uvec2& size) const
 	impl->setFraneBufferSize(size);
 }
 
+uvec2 Window::getMinSizeLimit() const
+{
+	return impl->size_limit_min;
+}
+
+uvec2 Window::getMaxSizeLimit() const
+{
+	return impl->size_limit_max;
+}
+
+void Window::setMinSizeLimit(const uvec2& size)
+{
+	impl->setMinSizeLimit(size);
+}
+
+void Window::setMaxSizeLimit(const uvec2& size)
+{
+	impl->setMaxSizeLimit(size);
+}
+
 float Window::getTransparency() const
 {
 	return impl->transparency;
@@ -179,6 +199,26 @@ void Window::setParent(const vk2d::Window& window)
 		impl->setParent(window.impl);
 	else
 		impl->setParent(nullptr);
+}
+
+void Window::enableVSync(bool value)
+{
+	if (value)
+		impl->present_mode = vk::PresentModeKHR::eFifo;
+	else
+		impl->present_mode = vk::PresentModeKHR::eImmediate;
+
+	impl->update_swapchain = true;
+}
+
+bool Window::isDisabled() const
+{
+	return impl->isDisabled();
+}
+
+void Window::setDisabled(bool value)
+{
+	impl->setDisabled(value);
 }
 
 const char* Window::getTitle() const

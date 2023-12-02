@@ -54,6 +54,11 @@ public:
 	uvec2 getFrameBufferSize() const;
 	void setFrameBufferSize(const uvec2& size) const;
 
+	uvec2 getMinSizeLimit() const;
+	uvec2 getMaxSizeLimit() const;
+	void setMinSizeLimit(const uvec2& size); // set (0, 0) to unlimit
+	void setMaxSizeLimit(const uvec2& size); // set (0, 0) to unlimit
+
 	float getTransparency() const;
 	void setTransparency(float value);
 
@@ -64,6 +69,11 @@ public:
 	void setResizable(bool value);
 
 	void setParent(const vk2d::Window& window = {});
+
+	void enableVSync(bool value);
+
+	bool isDisabled() const;
+	void setDisabled(bool value);
 
 	const char* getTitle() const;
 	void setTitle(const char* title);

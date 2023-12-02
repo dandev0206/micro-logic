@@ -12,6 +12,7 @@
 #include "util/convert_string.h"
 #include "micro_logic_config.h"
 
+#define TITLE_BAR_HEIGHT 45.f
 #define WINDOW_PADDING_WIDTH 20.f
 #define WINDOW_PADDING_HEIGHT 20.f
 #define WINDOW_PADDING ImVec2(20.f, 20.f)
@@ -202,6 +203,9 @@ std::string ListMessageBox::showDialog() const
 		auto child_height = client_size.y;
 		child_height -= ImGui::GetCursorPosY() + ImGui::GetFrameHeight();
 		child_height -= BUTTON_HEIGHT + WINDOW_PADDING_HEIGHT + 10;
+		
+		// window.setMinSizeLimit({ 0, window_size.y - child_height - ImGui::GetFrameHeight() });
+
 		ImGui::BeginChild("ListMessageBoxChild", ImVec2(0.f, child_height));
 		for (const auto& names : list)
 			ImGui::TextUnformatted(names.c_str());

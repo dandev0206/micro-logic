@@ -323,6 +323,14 @@ public:
 		}
 	}
 
+	void setMinSizeLimit(const uvec2& size) {
+		size_limit_min = size;
+	}
+
+	void setMaxSizeLimit(const uvec2& size) {
+		size_limit_max = size;
+	}
+
 	void setTransparency(float value) {
 		value = std::clamp(value, 0.f, 1.f);
 		
@@ -368,6 +376,14 @@ public:
 			SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, (LONG_PTR)impl->hwnd);
 		else
 			SetWindowLongPtr(hwnd, GWLP_HWNDPARENT, NULL);
+	}
+
+	bool isDisabled() const {
+		return !IsWindowEnabled(hwnd);
+	}
+
+	void setDisabled(bool value) {
+		EnableWindow(hwnd, !value);
 	}
 
 	void setTitle(const char* title) {
@@ -468,6 +484,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 			window->update_swapchain = true;
 		}
+	} break;
+	case WM_GETMINMAXINFO: {
+		if (!window) break;
+
+		LPMINMAXINFO info = (LPMINMAXINFO)lParam;
+		
+		if (window->size_limit_min.x)
+			info->ptMinTrackSize.x = (LONG)window->size_limit_min.x;
+		if (window->size_limit_min.y)
+			info->ptMinTrackSize.y = (LONG)window->size_limit_min.y;
+		if (window->size_limit_max.x)
+			info->ptMaxTrackSize.x = (LONG)window->size_limit_max.x;
+		if (window->size_limit_max.y)
+			info->ptMaxTrackSize.y = (LONG)window->size_limit_max.y;
+		return 0;
 	} break;
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN: {

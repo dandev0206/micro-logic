@@ -198,15 +198,6 @@ LRESULT CALLBACK resizingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		rld.loop->loop();
 		return TRUE;
 	} break;
-	case WM_GETMINMAXINFO: {
-		auto caption_rect = titlebar_datas[hwnd].titlebar->getCaptionRect();
-
-		LPMINMAXINFO info = (LPMINMAXINFO)lParam;
-		info->ptMinTrackSize.x = (LONG)caption_rect.left + 180;
-		info->ptMinTrackSize.y = 120;
-
-		return 0;
-	}
 	}
 	return CallWindowProc(reinterpret_cast<WNDPROC>(rld.original_proc), hwnd, msg, wParam, lParam);
 }

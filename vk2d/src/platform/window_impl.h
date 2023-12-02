@@ -19,6 +19,8 @@ public:
 		position(0, 0),
 		size(0, 0),
 		fb_size(0, 0),
+		size_limit_min(0, 0),
+		size_limit_max(0, 0),
 		transparency(0.f),
 		visible(false),
 		minimized(false),
@@ -28,6 +30,7 @@ public:
 		surface(nullptr),
 		swapchain(nullptr),
 		present_queue_family_idx(~0),
+		present_mode(vk::PresentModeKHR::eFifo),
 		image_format(vk::Format::eR8G8B8A8Unorm),
 		frame_idx(0),
 		semaphore_idx(0),
@@ -59,6 +62,8 @@ public:
 	ivec2             position;
 	uvec2             size;
 	uvec2             fb_size;
+	uvec2             size_limit_min;
+	uvec2             size_limit_max;
 	float             transparency;
 	bool              visible;
 	bool              minimized;
@@ -71,7 +76,8 @@ public:
 	uint32_t                          present_queue_family_idx;
 	vk::SurfaceCapabilitiesKHR        capabilities;
 	std::vector<vk::SurfaceFormatKHR> formats;
-	std::vector<vk::PresentModeKHR>   presentModes;
+	std::vector<vk::PresentModeKHR>   present_modes;
+	vk::PresentModeKHR                present_mode;
 	vk::Format                        image_format;
 
 	
@@ -95,9 +101,9 @@ public:
 			}
 		}
 
-		capabilities = inst.physical_device.getSurfaceCapabilitiesKHR(surface);
-		formats      = inst.physical_device.getSurfaceFormatsKHR(surface);
-		presentModes = inst.physical_device.getSurfacePresentModesKHR(surface);
+		capabilities  = inst.physical_device.getSurfaceCapabilitiesKHR(surface);
+		formats       = inst.physical_device.getSurfaceFormatsKHR(surface);
+		present_modes = inst.physical_device.getSurfacePresentModesKHR(surface);
 
 		recreate_swapchain();
 	}
@@ -141,7 +147,7 @@ public:
 			{}, {}, {},
 			vk::SurfaceTransformFlagBitsKHR::eIdentity,
 			vk::CompositeAlphaFlagBitsKHR::eOpaque,
-			VULKAN_HPP_NAMESPACE::PresentModeKHR::eImmediate,
+			present_mode,
 			true,
 			old_swapchain
 		);

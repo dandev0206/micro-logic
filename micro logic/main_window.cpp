@@ -7,7 +7,6 @@
 #include <vk2d/system/file_dialog.h>
 #include <imgui_internal.h>
 #include <tinyxml2.h>
-#include <thread>
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -95,6 +94,7 @@ MainWindow::MainWindow() :
 	std::setlocale(LC_ALL, "");
 
 	window.create(1280, 800, "micro logic", vk2d::Window::Resizable);
+	window.enableVSync(false);
 	titlebar.bindWindow(window);
 
 	{ // load font
@@ -145,6 +145,7 @@ MainWindow::MainWindow() :
 	initializeProject();
 	ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
 
+	ResizingLoop::setFrameLimit(FRAME_LIMIT);
 	ResizingLoop::initResizingLoop(window);
 	window.setVisible(true);
 }
@@ -184,11 +185,6 @@ void MainWindow::show()
 		ImGui::VK2D::ProcessViewportEvent(window);
 
 		loop();
-
-		float delay = 1.f / FRAME_LIMIT - delta_time;
-		if (delay > 0) {
-			std::this_thread::sleep_for(std::chrono::microseconds((int)(1e6 * delay)));
-		}
 	}
 }
 
@@ -1235,13 +1231,17 @@ void MainWindow::showMainMenus()
 		}
 
 		ImGui::Separator();
-		ImGui::TextUnformatted(project_name.c_str());
 
 		auto cursor_x = ImGui::GetCursorPosX();
-		auto width    = ImGui::GetWindowWidth();
-		auto height   = ImGui::GetWindowHeight();
+		ImGui::TextUnformatted(project_name.c_str());
 
-		titlebar.setCaptionRect({ cursor_x, 0.f, width - cursor_x - 10, height});
+		Rect caption_rect;
+		caption_rect.setPosition({ cursor_x, 0.f });
+		caption_rect.setSize(to_vec2(ImGui::GetWindowSize()));
+		caption_rect.width -= cursor_x + 10;
+
+		titlebar.setCaptionRect(caption_rect);
+		window.setMinSizeLimit({ ImGui::GetCursorPosX() + 220, 125 });
 		titlebar.endTitleBar();
 	}
 }
