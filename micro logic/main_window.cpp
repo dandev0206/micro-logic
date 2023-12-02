@@ -463,7 +463,13 @@ bool MainWindow::saveProject()
 	auto res = doc.SaveFile((project_dir + "\\" + project_name + PROJECT_EXT).c_str());
 
 	if (res != tinyxml2::XMLError::XML_SUCCESS) {
+		MessageBox msg_box;
+		msg_box.title   = "Error";
+		msg_box.content = "Error occured while saving project '" + project_name + PROJECT_EXT"'";
+		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
 
+		msg_box.showDialog();
+		return false;
 	}
 
 	return true;
@@ -528,7 +534,6 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 				MessageBox msg_box;
 				msg_box.title   = "Error";
 				msg_box.content = "guid of sheet '" + sheet->name + "' is different";
-				msg_box.buttons = "OK";
 				msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
 
 				msg_box.showDialog();
@@ -545,7 +550,6 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 			MessageBox msg_box;
 			msg_box.title   = "Error";
 			msg_box.content = "cannot load imgui ini settings";
-			msg_box.buttons = "OK";
 			msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
 
 			msg_box.showDialog();
@@ -761,7 +765,7 @@ bool MainWindow::openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::s
 		MessageBox msg_box;
 		msg_box.title   = "Error";
 		msg_box.content = "cannot locate '" + path + "'.";
-		msg_box.buttons = "OK";
+		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
 
 		msg_box.showDialog();
 		return false;
@@ -786,7 +790,6 @@ bool MainWindow::saveSchematicSheetImpl(const SchematicSheet& sheet, const std::
 		msg_box.owner   = &window;
 		msg_box.title   = "Error";
 		msg_box.content = "Failed to save schematic sheet";
-		msg_box.buttons = "OK";
 		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
 		return false;
 	}
