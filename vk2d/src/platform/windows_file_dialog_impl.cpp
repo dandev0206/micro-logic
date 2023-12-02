@@ -172,17 +172,17 @@ FolderOpenDialog::FolderOpenDialog() :
 	title(nullptr),
 	default_dir(nullptr),
 	default_name(nullptr),
-	dir(nullptr) 
+	path(nullptr) 
 {}
 
 FolderOpenDialog::~FolderOpenDialog()
 {
-	CoTaskMemFree(dir);
+	CoTaskMemFree(path);
 }
 
 DialogResult FolderOpenDialog::showDialog()
 {
-	CoTaskMemFree(std::exchange(dir, nullptr));
+	CoTaskMemFree(std::exchange(path, nullptr));
 
 	COMGuard com_guard;
 	if (FAILED(com_guard.init(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
@@ -216,14 +216,14 @@ DialogResult FolderOpenDialog::showDialog()
 
 	ReleaseGuard item_guard(item);
 
-	if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &dir))) return DialogResult::Error;
+	if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) return DialogResult::Error;
 
 	return DialogResult::OK;
 }
 
 const wchar_t* FolderOpenDialog::getResultDir() const
 {
-	return dir;
+	return path;
 }
 
 FileOpenDialog::FileOpenDialog(bool multi_selectable) :

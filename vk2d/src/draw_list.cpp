@@ -1,5 +1,7 @@
 #include "../include/vk2d/graphics/draw_list.h"
 
+#include "../include/vk2d/graphics/render_target.h"
+#include "../include/vk2d/graphics/render_states.h"
 #include "../include/vk2d/vk_instance.h"
 #include <glm/gtx/rotate_vector.hpp>
 

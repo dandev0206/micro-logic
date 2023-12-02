@@ -1,5 +1,8 @@
 #include "../include/vk2d/graphics/texture_view.h"
 
+#include "../include/vk2d/graphics/texture.h"
+#include "../include/vk2d/graphics/render_target.h"
+#include "../include/vk2d/graphics/render_states.h"
 #include "../include/vk2d/vk_instance.h"
 
 VK2D_BEGIN
@@ -21,9 +24,10 @@ const Texture& TextureView::getTexture() const
 	return *texture;
 }
 
-void TextureView::setTexture(const Texture& texture)
+TextureView& TextureView::setTexture(const Texture& texture)
 {
 	this->texture = &texture;
+	return *this;
 }
 
 uRect TextureView::getRegion() const
@@ -31,9 +35,10 @@ uRect TextureView::getRegion() const
 	return region;
 }
 
-void TextureView::setRegion(const uRect& region)
+TextureView& TextureView::setRegion(const uRect& region)
 {
 	this->region = region;
+	return *this;
 }
 
 Color TextureView::getColor() const
@@ -41,9 +46,15 @@ Color TextureView::getColor() const
 	return color;
 }
 
-void TextureView::setColor(const Color& color)
+TextureView& TextureView::setColor(const Color& color)
 {
 	this->color = color;
+	return *this;
+}
+
+bool TextureView::empty() const 
+{
+	return !texture;
 }
 
 void TextureView::draw(RenderTarget& target, RenderStates& states) const

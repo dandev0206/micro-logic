@@ -142,7 +142,7 @@ SelectingSideMenu::SelectingSideMenu(const char* menu_name) :
 	blocked(false),
 	start_pos(),
 	last_pos(),
-	dir(Direction::Up),
+	path(Direction::Up),
 	last_dir(Direction::Up)
 {}
 
@@ -185,26 +185,26 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 
 	switch (e.type) {
 	case Event::KeyPressed: {
-		auto tmp = (int)dir;
+		auto tmp = (int)path;
 		switch (e.keyboard.key) {
 		case Key::Up:
-			dir = Direction::Up;
+			path = Direction::Up;
 			break;
 		case Key::Right:
-			dir = Direction::Right;
+			path = Direction::Right;
 			break;
 		case Key::Down:
-			dir = Direction::Down;
+			path = Direction::Down;
 			break;
 		case Key::Left:
-			dir = Direction::Left;
+			path = Direction::Left;
 			break;
 		case Key::Delete:
 			deleteSelectedElement();
 			is_working = false;
 			break;
 		};
-		last_dir = rotate_dir(dir, (Direction)tmp);
+		last_dir = rotate_dir(path, (Direction)tmp);
 	} break;
 	case Event::MousePressed: {
 		if (!ws.capturing_mouse) break;
@@ -227,7 +227,7 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 				}
 			}
 		} else if (e.mouseButton.button == Mouse::Right) {
-			dir      = rotate_cw(dir);
+			path      = rotate_cw(path);
 			last_dir = Direction::Right;
 		}
 	} break;
@@ -249,7 +249,7 @@ void SelectingSideMenu::upperMenu()
 	if (is_working && last_dir == Direction::Up) {
 		auto& main_window = MainWindow::get();
 
-		int tmp = (int)dir;
+		int tmp = (int)path;
 		ImGui::SameLine();
 		ImGui::RadioImageButton(ICON_DIR_UP, { 35, 35 }, &tmp, 0);
 		ImGui::SameLine();
@@ -259,8 +259,8 @@ void SelectingSideMenu::upperMenu()
 		ImGui::SameLine();
 		ImGui::RadioImageButton(ICON_DIR_LEFT, { 35, 35 }, &tmp, 3);
 
-		last_dir = (Direction)(((int)tmp - (int)dir + 4) % 4);
-		dir      = (Direction)tmp;
+		last_dir = (Direction)(((int)tmp - (int)path + 4) % 4);
+		path      = (Direction)tmp;
 	}
 }
 
@@ -271,7 +271,7 @@ void SelectingSideMenu::beginWork()
 	is_working = true;
 	start_pos  = ws.getClampedCursorPlanePos();
 	last_pos   = start_pos;
-	dir        = Direction::Up;
+	path        = Direction::Up;
 	last_dir   = Direction::Up;
 }
 
@@ -411,7 +411,7 @@ void Menu_Select::onClose()
 		if (!elem.isWireBased())
 			elem.style &= ~CircuitElement::Blocked;
 
-		elem.transform({}, last_pos, invert_dir(dir));
+		elem.transform({}, last_pos, invert_dir(path));
 		elem.transform(start_pos - last_pos, {}, Direction::Up);
 	}
 
@@ -429,12 +429,12 @@ void Menu_Select::endWork()
 
 	auto delta = last_pos - start_pos;
 
-	if (delta != vec2(0.f) || dir != Direction::Up) {
+	if (delta != vec2(0.f) || path != Direction::Up) {
 		auto cmd = std::make_unique<Command_Move>();
 
 		cmd->delta  = delta;
 		cmd->origin = last_pos;
-		cmd->dir    = dir;
+		cmd->path    = path;
 
 		for (auto iter : ws.sheet->selections)
 			ws.getBVH().update_element(iter, iter->second->getAABB());
@@ -493,7 +493,7 @@ void Menu_Library::loop()
 		auto& gate    = main_window.logic_gates[curr_gate];
 
 		gate.pos = pos;
-		gate.dir = curr_dir;
+		gate.path = curr_dir;
 
 		auto overlap = bvh.query(gate.getAABB(), [&](auto iter) {
 			return iter->second->getType() != CircuitElement::Wire;
@@ -679,12 +679,12 @@ void Menu_Copy::endWork()
 	} else {
 		auto delta = last_pos - start_pos;
 
-		if (delta != vec2(0.f) || dir != Direction::Up) {
+		if (delta != vec2(0.f) || path != Direction::Up) {
 			auto cmd = std::make_unique<Command_Copy>();
 
 			cmd->delta  = delta;
 			cmd->origin = last_pos;
-			cmd->dir    = dir;
+			cmd->path    = path;
 
 			ws.pushCommand(std::move(cmd));
 		}
@@ -858,7 +858,7 @@ void Menu_Cut::endWork()
 
 		cmd->delta  = last_pos - start_pos;
 		cmd->origin = last_pos;
-		cmd->dir    = dir;
+		cmd->path    = path;
 
 		ws.pushCommand(std::move(cmd));
 	}

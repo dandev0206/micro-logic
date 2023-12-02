@@ -43,7 +43,7 @@ public:
 	bool check_empty;
 
 private:
-	wchar_t* dir;
+	wchar_t* path;
 };
 
 class FileOpenDialog : public FileDialogBase {

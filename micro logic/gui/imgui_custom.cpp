@@ -35,6 +35,11 @@ void Image(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec
 	Image(texture_id, ImVec2(size.x, size.y), uv0, uv1, to_ImColor(tintColor), to_ImColor(borderColor));
 }
 
+void Image(const vk2d::TextureView texture_view, const vk2d::vec2& size, const vk2d::Color& tintColor, const vk2d::Color& borderColor)
+{
+	Image(texture_view.getTexture(), texture_view.getRegion(), size, tintColor, borderColor);
+}
+
 bool ImageButton(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec2& size, const vk2d::Color& bgColor, const vk2d::Color& tintColor)
 {
 	auto window       = GetCurrentWindow();

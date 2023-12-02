@@ -20,12 +20,15 @@ public:
 	void serialize(std::ostream& os) const override;
 	void unserialize(std::istream& is) override;
 
+	bool empty() const;
+
 public:
 	void setPosition(const vec2& pos);
 	void setScale(float scale);
 
 public:
 	std::string name;
+	std::string path;
 	std::string guid;
 
 	vec2  position;
@@ -39,4 +42,5 @@ public:
 	vk2d::Texture thumbnail;
 
 	bool file_saved;
+	bool is_up_to_date;
 };

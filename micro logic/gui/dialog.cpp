@@ -10,23 +10,22 @@
 namespace priv {
 	class DialogImpl : public ResizingLoop {
 	public:
-		vk2d::Window   window;
-		CustomTitleBar titlebar;
-		ImGuiContext*  ctx;
-		ImGuiContext*  prev_ctx;
-		Dialog*        curr_dialog;
+		vk2d::Window          window;
+		CustomTitleBar        titlebar;
+		ImGuiContext*         ctx;
+		ImGuiContext*         prev_ctx;
+		Dialog*               curr_dialog;
+		std::function<void()> loop_func;
 
 		void loop() override {
 			ResizingLoop::loop();
 
-			curr_dialog->window_size = to_ImVec2(window.getSize());
-			curr_dialog->client_size = curr_dialog->window_size;
+			curr_dialog->window_size    = to_ImVec2(window.getSize());
+			curr_dialog->client_size    = curr_dialog->window_size;
 			curr_dialog->client_size.y -= curr_dialog->title_height;
-			curr_dialog->dialogLoop();
-		}
 
-		void eventProc(const vk2d::Event& e) override {
-			curr_dialog->dialogEventProc(e);
+			if (curr_dialog->updateDialog())
+				loop_func();
 		}
 	};
 }
@@ -52,10 +51,15 @@ static priv::DialogImpl* push_dialog_impl(Dialog* dialog = nullptr)
 
 	io.IniFilename = nullptr;
 
-	style.Colors[ImGuiCol_WindowBg]      = ImVec4(0.14f, 0.14f, 0.14f, 1.f); 
-	style.Colors[ImGuiCol_Button]        = ImVec4(0.23f, 0.23f, 0.23f, 1.f);
-	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.3f, 0.3f, 0.3f, 1.f);
-	style.Colors[ImGuiCol_ButtonActive]  = ImVec4(0.2f, 0.2f, 0.2f, 1.f);
+	style.Colors[ImGuiCol_WindowBg]       = ImVec4(0.14f, 0.14f, 0.14f, 1.f);
+	style.Colors[ImGuiCol_FrameBg]        = ImVec4(0.22f, 0.22f, 0.22f, 1.f);
+	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.12f, 0.12f, 0.12f, 1.f);
+	style.Colors[ImGuiCol_Button]         = ImVec4(0.23f, 0.23f, 0.23f, 1.f);
+	style.Colors[ImGuiCol_ButtonHovered]  = ImVec4(0.3f, 0.3f, 0.3f, 1.f);
+	style.Colors[ImGuiCol_ButtonActive]   = ImVec4(0.2f, 0.2f, 0.2f, 1.f);
+
+	style.WindowPadding = ImVec2(20, 20);
+	style.ItemSpacing   = ImVec2(20, 20);
 
 	auto* font = io.Fonts->AddFontFromFileTTF(FONT_PATH, FONT_SIZE, nullptr, io.Fonts->GetGlyphRangesKorean());
 	ImGui::VK2D::UpdateFontTexture(impl->window);
@@ -99,6 +103,10 @@ void Dialog::destroyImpl()
 
 	impls.clear();
 }
+
+Dialog::Dialog(bool resizable) :
+	Dialog("", resizable)
+{}
 
 Dialog::Dialog(const std::string& title, bool resizable) :
 	title(title),
@@ -146,6 +154,16 @@ void Dialog::endShowDialog() const
 {
 	window.setVisible(false);
 	ImGui::SetCurrentContext(impl->prev_ctx);
+}
+
+void Dialog::dialogLoop(const std::function<void()>& loop_func) const
+{
+	impl->loop_func = loop_func;
+
+	while (window.isVisible()) {
+		if (!Dialog::updateDialog()) break;
+		loop_func();
+	}
 }
 
 void Dialog::beginDialogWindow(const char* name, bool* p_open, ImGuiWindowFlags flags) const

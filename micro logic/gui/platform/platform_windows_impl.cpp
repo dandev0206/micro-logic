@@ -211,6 +211,30 @@ LRESULT CALLBACK resizingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return CallWindowProc(reinterpret_cast<WNDPROC>(rld.original_proc), hwnd, msg, wParam, lParam);
 }
 
+void CreateNewProcess()
+{
+	STARTUPINFOA si{};
+	PROCESS_INFORMATION pi{};
+
+	si.cb = sizeof(si);
+
+	CreateProcessA(
+		__argv[0],
+		NULL,
+		NULL,
+		NULL,
+		FALSE,
+		0,
+		NULL,
+		NULL,
+		&si,
+		&pi
+	);
+
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+}
+
 void InjectTitleBar(CustomTitleBar* titlebar)
 {
 	auto& window = titlebar->getWindow();

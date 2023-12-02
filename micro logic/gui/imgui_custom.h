@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vk2d/graphics/texture.h>
+#include <vk2d/graphics/texture_view.h>
 
 namespace ImGui
 {
@@ -8,6 +9,11 @@ namespace ImGui
 		const vk2d::Rect& rect,
 		const vk2d::vec2& size,
 		const vk2d::Color& tintColor   = vk2d::Colors::White,
+		const vk2d::Color& borderColor = vk2d::Colors::Transparent);
+
+	void Image(const vk2d::TextureView texture_view,
+		const vk2d::vec2& size,
+		const vk2d::Color& tintColor = vk2d::Colors::White,
 		const vk2d::Color& borderColor = vk2d::Colors::Transparent);
 
 	bool ImageButton(const vk2d::Texture& texture,

@@ -184,7 +184,7 @@ LogicGate CircuitElementLoader::makeLogicGate(tinyxml2::XMLElement* elem, uint64
 
 	logic_gate.shared = shared;
 	logic_gate.pos    = {};
-	logic_gate.dir    = Direction::Up;
+	logic_gate.path    = Direction::Up;
 
 	return logic_gate;
 }
@@ -203,7 +203,7 @@ LogicUnit CircuitElementLoader::makeLogicUnit(tinyxml2::XMLElement* elem, uint64
 
 	logic_unit.shared = shared;
 	logic_unit.pos    = {};
-	logic_unit.dir    = Direction::Up;
+	logic_unit.path    = Direction::Up;
 
 	return logic_unit;
 }

@@ -1,9 +1,11 @@
 #pragma once
 
-#include "render_target.h"
-#include "render_states.h"
+#include "../vk2d_config.h"
 
 VK2D_BEGIN
+
+class RenderTarget;
+class RenderStates;
 
 class Drawable {
 public:

@@ -49,7 +49,7 @@ public:
 	bool                        blocked;
 	vec2                        start_pos;
 	vec2                        last_pos;
-	Direction                   dir;
+	Direction                   path;
 	Direction                   last_dir;
 };
 

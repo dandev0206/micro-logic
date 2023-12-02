@@ -1,10 +1,13 @@
 #pragma once
 
-#include "texture.h"
 #include "drawable.h"
+#include "color.hpp"
 #include "../transformable.hpp"
+#include "../rect.hpp"
 
 VK2D_BEGIN
+
+class Texture;
 
 class TextureView : public Drawable, public Transformable {
 public:
@@ -18,13 +21,15 @@ public:
 	TextureView& operator=(TextureView&& rhs) VK2D_NOTHROW = default;
 
 	const Texture& getTexture() const;
-	void setTexture(const Texture& texture);
+	TextureView& setTexture(const Texture& texture);
 
 	uRect getRegion() const;
-	void setRegion(const uRect& region);
+	TextureView& setRegion(const uRect& region);
 
 	Color getColor() const;
-	void setColor(const Color& color);
+	TextureView& setColor(const Color& color);
+
+	bool empty() const;
 
 private:
 	void draw(RenderTarget& target, RenderStates& states) const override;

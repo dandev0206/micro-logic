@@ -13,6 +13,7 @@
 #include <random>
 #include <locale>
 #include <iomanip>
+#include "gui/platform/platform_impl.h"
 #include "gui/platform/system_folder.h"
 #include "gui/imgui_impl_vk2d.h"
 #include "gui/imgui_custom.h"
@@ -32,6 +33,7 @@
 #define IMGUI_NO_LABEL "##" STRINGIZE(__COUNTER__)
 
 using vk2d::DialogResult;
+namespace fs = std::filesystem;
 
 MainWindow* MainWindow::main_window = nullptr;
 
@@ -69,6 +71,19 @@ static std::string create_guid() {
 	str += "]";
 
 	return str;
+}
+
+bool is_sub_path(const fs::path& base, const fs::path& destination)
+{
+	auto relative = fs::relative(destination, base).generic_string();
+
+	if (relative.empty()) 
+		return false;
+	if (relative.size() == 1) 
+		return true;
+	if (relative[0] != '.' && relative[1] != '.') 
+		return true;
+	return false;
 }
 
 MainWindow::MainWindow() :
@@ -167,9 +182,10 @@ void MainWindow::show()
 		if (want_open_project) {
 			closeProjectImpl();
 
-			if (new_project_path.empty()) // new project
+			if (new_project_path.empty()) {
 				initializeProject();
-			else
+				ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
+			} else
 				openProjectImpl(new_project_path);
 
 			want_open_project = false;
@@ -253,8 +269,8 @@ void MainWindow::loop() {
 
 	ImGui::VK2D::DisplayViewports(window, true);
 
-	if (io.WantSaveIniSettings && !project_ini_name.empty())
-		saveProjectIni();
+	if (io.WantSaveIniSettings && isProjectOpened())
+		saveProject();
 }
 
 void MainWindow::eventProc(const vk2d::Event& e)
@@ -291,12 +307,11 @@ void MainWindow::initializeProject()
 	assert(!initialized);
 
 	project_dir          = "";
-	project_name         = "";
-	project_ini_name     = "";
+	project_name         = "(empty project)";
 	curr_menu            = nullptr;
 	curr_menu_hover      = nullptr;
 	curr_window_sheet    = nullptr;
-	project_saved        = false;
+	project_opened       = false;
 	last_time            = clock_t::now();
 
 	{ // init settings
@@ -321,6 +336,7 @@ void MainWindow::initializeProject()
 		auto& style = ImGui::GetStyle();
 
 		style.Colors[ImGuiCol_WindowBg]           = ImVec4(0.f, 0.f, 0.f, 1.f);
+		style.Colors[ImGuiCol_PopupBg]            = ImVec4(0.08f, 0.08f, 0.08f, 1.f);
 		style.Colors[ImGuiCol_Tab]                = ImVec4(0.20f, 0.20f, 0.20f, 1.f);
 		style.Colors[ImGuiCol_TabHovered]         = ImVec4(0.31f, 0.31f, 0.31f, 1.f);
 		style.Colors[ImGuiCol_TabActive]          = ImVec4(0.31f, 0.31f, 0.31f, 1.f);
@@ -350,47 +366,76 @@ void MainWindow::initializeProject()
 
 bool MainWindow::openProject()
 {
-	if (!isProjectEmpty() && !isProjectAllSaved()) {
-		saveProject(true);
-	}
+	if (!closeProject()) return false;
 
 	vk2d::FileOpenDialog dialog;
 
 	auto default_dir = to_wide(GetSystemFolderPath(SystemFolders::Desktop));
 
-	dialog.owner = &window;
-	dialog.title = L"Open project";
-	dialog.default_dir = default_dir.c_str();
+	dialog.owner        = &window;
+	dialog.title        = L"Open project";
+	dialog.default_dir  = default_dir.c_str();
 	dialog.default_name = L"";
-	dialog.filters.emplace_back(L"Project file", PROJECT_EXTW);
+	dialog.filters.emplace_back(L"Project file", L"mlp");
 
 	if (dialog.showDialog() != vk2d::DialogResult::OK) return false;
 
 	auto path = std::filesystem::path(dialog.getResultPaths().front());
-	auto dir = path.parent_path().generic_string();
+	auto dir  = path.parent_path().generic_string();
 	auto name = path.filename().generic_string();
 
 	assert(path.extension() == PROJECT_EXTW);
 
 	if (dir != project_dir || name != project_name) {
 		want_open_project = true;
-		new_project_path = path.generic_string();
+		new_project_path  = path.generic_string();
 	}
 
 	return true;
 }
 
-bool MainWindow::saveProject(bool save_sheet, bool save_as)
+bool MainWindow::saveAll()
 {
-	if (!isProjectOpened() || save_as) {
+	if (!saveProject()) return false;
+
+	for (auto& sheet : sheets)
+		if (!sheet->is_up_to_date)
+			if (!saveSchematicSheet(*sheet))
+				return false;
+
+	postInfoMessage("Item(s) saved");
+
+	return true;
+}
+
+bool MainWindow::saveProjectAs()
+{
+	ProjectSaveDialog dialog;
+	dialog.owner   = &window;
+	dialog.save_as = true;
+
+	if (dialog.showDialog() == "Save") {
+		project_dir    = dialog.project_dir;
+		project_name   = dialog.project_name;
+		project_opened = true;
+	} else {
+		return false;
+	}
+
+	return saveAll();
+}
+
+bool MainWindow::saveProject()
+{
+	if (!isProjectOpened()) {
 		ProjectSaveDialog dialog;
 		dialog.owner   = &window;
-		dialog.save_as = save_as;
+		dialog.save_as = false;
 
-		if (dialog.showDialog() == "save") {
-			project_dir      = dialog.project_dir;
-			project_name     = dialog.project_name;
-			project_ini_name = project_dir + "\\" + project_name + ".ini";
+		if (dialog.showDialog() == "Save") {
+			project_dir    = dialog.project_dir;
+			project_name   = dialog.project_name;
+			project_opened = true;
 		} else {
 			return false;
 		}
@@ -404,22 +449,23 @@ bool MainWindow::saveProject(bool save_sheet, bool save_as)
 	for (const auto& sheet : sheets) {
 		auto* elem = root->InsertNewChildElement("SchematicSheet");
 
-		std::string file_name = sheet->name + SCHEMATIC_SHEET_EXT;
-
 		elem->SetAttribute("name", sheet->name.c_str());
-		elem->SetAttribute("path", file_name.c_str());
+		elem->SetAttribute("path", sheet->path.c_str());
 		elem->SetAttribute("guid", sheet->guid.c_str());
-
-		if (save_sheet && !sheet->file_saved)
-			saveSchematicSheet(*sheet);
 	}
-	doc.SaveFile((project_dir + "\\" + project_name + PROJECT_EXT).c_str());
+	{
+		auto* elem = root->InsertNewChildElement("ImGui");
 
-	saveProjectIni();
+		auto encoded = Base64::encode(ImGui::SaveIniSettingsToMemory());
+		elem->SetText(encoded.c_str());
+	}
+	
+	auto res = doc.SaveFile((project_dir + "\\" + project_name + PROJECT_EXT).c_str());
 
-	project_saved = true;
+	if (res != tinyxml2::XMLError::XML_SUCCESS) {
 
-	postInfoMessage("Project Saved");
+	}
+
 	return true;
 }
 
@@ -427,31 +473,42 @@ bool MainWindow::closeProject()
 {
 	assert(initialized);
 
-	if (!isProjectEmpty() && !isProjectAllSaved()) {
-		ProjectCloseDialog dialog;
-		dialog.owner = &window;
+	if (isProjectEmpty()) {
+		return true;
+	} else if (hasUnsavedSchematicSheet()) {
+		ListMessageBox dialog;
+		dialog.owner   = &window;
+		dialog.title   = "Closing project '" + project_name + "'";
+		dialog.content = "Save changes to the following item(s)?";
+		dialog.buttons = "Save;Don't Save;Cancel";
+
+		for (auto& sheet : sheets)
+			if (!sheet->is_up_to_date)
+				dialog.list.emplace_back("*" + sheet->name + SCHEMATIC_SHEET_EXT);
 
 		auto result = dialog.showDialog();
 		if (result == "Save") {
-			if (!saveProject(true))
-				return false;
-		} else if (result != "Don't Save") {
-			return false;
+			return saveAll();
+		} else if (result == "Don't Save") {
+			return true;
 		}
+	} else {
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 bool MainWindow::openProjectImpl(const std::string& project_path)
 {
 	assert(!initialized);
 
+	std::string                      imgui_ini;
 	std::vector<SchematicSheetPtr_t> new_sheets;
 
 	auto path             = std::filesystem::path(project_path);
 	auto new_project_dir  = path.parent_path().generic_string();
-	auto new_project_name = path.filename().generic_string();
+	auto new_project_name = path.filename().replace_extension().generic_string();
 
 	tinyxml2::XMLDocument doc;
 	doc.LoadFile(project_path.c_str());
@@ -461,45 +518,50 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 	{
 		auto* elem = root->FirstChildElement("SchematicSheet");
 		for (; elem; elem = elem->NextSiblingElement("SchematicSheet")) {
-			std::string file_name = elem->Attribute("path");
+			std::string file_path = elem->Attribute("path");
+			std::string full_path = new_project_dir + "\\" + file_path;	
 
-			std::ifstream file(new_project_dir + "\\" + file_name);
-
-			if (!file.is_open()) {
-				MessageBox msg_box;
-				msg_box.title   = "Error";
-				msg_box.content = "cannot locate " + file_name;
-				msg_box.buttons = "OK";
-
-				msg_box.showDialog();
-				return false;
-			}
-
-			auto& sheet = new_sheets.emplace_back(std::make_unique<SchematicSheet>());
-			sheet->unserialize(file);
-			updateThumbnail(*sheet);
+			SchematicSheetPtr_t sheet;
+			if (openSchematicSheetImpl(sheet, full_path)) return false;
 
 			if (elem->Attribute("guid") != sheet->guid) {
 				MessageBox msg_box;
 				msg_box.title   = "Error";
-				msg_box.content = "guid of sheet " + file_name + " is different";
+				msg_box.content = "guid of sheet '" + sheet->name + "' is different";
 				msg_box.buttons = "OK";
+				msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
 
 				msg_box.showDialog();
 				return false;
 			}
+
+			new_sheets.emplace_back(std::move(sheet));
 		}
+	}
+	{
+		auto* elem = root->FirstChildElement("ImGui");
+		
+		if (elem->GetText() == nullptr) {
+			MessageBox msg_box;
+			msg_box.title   = "Error";
+			msg_box.content = "cannot load imgui ini settings";
+			msg_box.buttons = "OK";
+			msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
+
+			msg_box.showDialog();
+			return false;
+		}
+
+		imgui_ini = Base64::decode(elem->GetText());
 	}
 
 	initializeProject();
+	ImGui::LoadIniSettingsFromMemory(imgui_ini.c_str());
 
-	project_dir      = new_project_dir;
-	project_name     = new_project_name;
-	project_ini_name = project_dir + "\\" + project_name + ".ini";
+	project_dir    = new_project_dir;
+	project_name   = new_project_name;
+	project_opened = true;
 	sheets.swap(new_sheets);
-	project_saved = true;
-
-	loadProjectIni();
 
 	postInfoMessage("Project " + project_name + " Opened");
 	return true;
@@ -509,8 +571,6 @@ bool MainWindow::closeProjectImpl()
 {
 	assert(initialized);
 
-	if (!project_ini_name.empty())
-		saveProjectIni();
 	ImGui::VK2D::ShutDown(window);
 
 	project_dir  = "";
@@ -523,41 +583,9 @@ bool MainWindow::closeProjectImpl()
 	return true;
 }
 
-void MainWindow::loadProjectIni()
-{
-	assert(!project_ini_name.empty());
-
-	tinyxml2::XMLDocument doc;
-
-	doc.LoadFile(project_ini_name.c_str());
-	auto* root = doc.FirstChildElement("ProjectInitialization");
-
-	{
-		auto* elem = root->FirstChildElement("ImGui");
-		ImGui::LoadIniSettingsFromMemory(elem->GetText());
-	}
-}
-
-void MainWindow::saveProjectIni()
-{
-	assert(!project_ini_name.empty());
-
-	tinyxml2::XMLDocument doc;
-
-	auto* root = doc.NewElement("ProjectInitialization");
-	doc.InsertFirstChild(root);
-	
-	{
-		auto* elem = root->InsertNewChildElement("ImGui");
-		elem->SetText(ImGui::SaveIniSettingsToMemory());
-	};
-
-	doc.SaveFile(project_ini_name.c_str());
-}
-
 bool MainWindow::isProjectOpened() const
 {
-	return !project_dir.empty();
+	return project_opened;
 }
 
 SideMenu& MainWindow::getCurrentSideMenu()
@@ -565,14 +593,9 @@ SideMenu& MainWindow::getCurrentSideMenu()
 	return *curr_menu;
 }
 
-bool MainWindow::isProjectAllSaved() const
-{
-	return !hasUnsavedSchematicSheet() && project_saved;
-}
-
 bool MainWindow::isProjectEmpty() const
 {
-	if (!project_name.empty()) return false;
+	if (project_opened) return false;
 	if (!sheets.empty()) return false;
 	return true;
 }
@@ -590,45 +613,46 @@ void MainWindow::setCurrentSideMenu(SideMenu* menu)
 		curr_menu->onBegin();
 }
 
-void MainWindow::importSchematicSheetDialog()
+bool MainWindow::addSchematicSheet()
 {
-}
+	SchematicSheetNameDialog dialog;
+	dialog.owner      = &window;
+	dialog.title      = "Add schematic sheet";
+	dialog.parent_dir = project_name;
+	dialog.buttons    = "Add;Cancel";
 
-void MainWindow::exportSchematicSheetDialog()
-{
-}
-
-void MainWindow::addSchematicSheet()
-{
-	bool        found;
-	int32_t     num = -1;
-	std::string name;
-
+	int32_t num = 0;
 	do {
-		found = false;
-		name  = "Sheet" + std::to_string(++num);
+		dialog.sheet_name = "Sheet" + std::to_string(num++);
+		dialog.sheet_path = dialog.sheet_name + SCHEMATIC_SHEET_EXT;
 
-		for (auto& sheet : sheets) {
-			if (sheet->name == name) {
-				found = true;
-				break;
-			}
-		}
-	} while (found);
+	} while (findSchematicSheetByPath(dialog.sheet_path));
 
-	auto& sheet = sheets.emplace_back(std::make_unique<SchematicSheet>());
+	dialog.sheet_path = dialog.sheet_name;
 
-	sheet->guid      = create_guid();
-	sheet->name      = name;
+	if (dialog.showDialog() != "Add") return false;
+
+	auto sheet  = std::make_unique<SchematicSheet>();
+	sheet->guid = create_guid();
+	sheet->name = dialog.sheet_name;
+	sheet->path = dialog.sheet_path;
+
 	updateThumbnail(*sheet);
 
-	project_saved = false;
+	if (isProjectOpened()) {
+		if (!saveSchematicSheet(*sheet)) return false;
+		if (!saveProject()) return false;
+	}
+
+	sheets.emplace_back(std::move(sheet));
+
+	return true;
 }
 
 bool MainWindow::saveSchematicSheet(SchematicSheet& sheet)
 {
 	if (!isProjectOpened())
-		if (!saveProject(false))
+		if (!saveProject())
 			return false;
 
 	for (auto& ws : window_sheets) {
@@ -638,24 +662,195 @@ bool MainWindow::saveSchematicSheet(SchematicSheet& sheet)
 		}
 	}
 
-	std::ofstream of(project_dir + "\\" + sheet.name + SCHEMATIC_SHEET_EXT);
-	sheet.serialize(of);
-	sheet.file_saved = true;
+	if (!saveSchematicSheetImpl(sheet, project_dir + "\\" + sheet.path)) return false;
 
-	postInfoMessage("Sheet " + sheet.name + " Saved");
+	sheet.file_saved    = true;
+	sheet.is_up_to_date = true;
+
+	postInfoMessage("Sheet '" + sheet.name + "' Saved");
+
 	return true;
 }
 
-void MainWindow::deleteSchematicSheet(SchematicSheet& sheet)
+bool MainWindow::importSchematicSheet()
 {
+	auto default_dir = to_wide(project_dir);
+
+	vk2d::FileOpenDialog dialog;
+	dialog.owner            = &window;
+	dialog.title            = L"Import schematic sheet";
+	dialog.default_dir      = default_dir.c_str();
+	dialog.default_name     = L"";
+	dialog.multi_selectable = true;
+	dialog.filters.emplace_back(L"Schematic sheet file", L"mls");
+
+	if (dialog.showDialog() != vk2d::DialogResult::OK) return false;
+
+	auto paths = dialog.getResultPaths();
+
+	if (isProjectOpened()) {
+		std::vector<std::string> out_of;
+
+		for (const auto* path_str : paths) {
+			if (!is_sub_path(project_dir, path_str)) {
+				out_of.emplace_back(to_unicode(path_str));
+			}
+		}
+
+		if (!out_of.empty()) {
+			ListMessageBox msg_box;
+			msg_box.owner   = &window; 
+			msg_box.title   = "Warning";
+			msg_box.content = "Following items are out of project sub directory.";
+			msg_box.buttons = "Ok;Cancel";
+			msg_box.icon    = icon_to_texture_view(ICON_WARNING_BIG);
+			msg_box.list.swap(out_of);
+
+			if (msg_box.showDialog() != "Ok") return false;
+		}
+	}
+
+	for (const auto* path_str : paths) {
+		SchematicSheetPtr_t sheet;
+		
+		auto path = to_unicode(path_str);
+
+		if (!openSchematicSheetImpl(sheet, path)) return false;
+
+		sheet->file_saved    = is_sub_path(project_dir, path_str);
+		sheet->is_up_to_date = sheet->file_saved;
+
+		if (findSchematicSheetByPath(sheet->path)) {
+			SchematicSheetNameDialog dialog;
+			dialog.owner        = &window;
+			dialog.title        = "Rename schematic sheet";
+			dialog.content      = "'" + sheet->path + "' already exists.";
+			dialog.sheet_path   = sheet->path;
+		}
+
+		sheets.emplace_back(std::move(sheet));
+	}
+
+	return true;
+}
+
+bool MainWindow::exportSchematicSheet(const SchematicSheet& sheet)
+{
+	auto default_dir = to_wide(project_dir);
+
+	vk2d::FileSaveDialog dialog;
+	dialog.owner        = &window;
+	dialog.title        = L"Export schematic sheet";
+	dialog.default_dir  = default_dir.c_str();
+	dialog.default_name = L"";
+	dialog.filters.emplace_back(L"Schematic sheet file", L"mls");
+
+	if (dialog.showDialog() != vk2d::DialogResult::OK) return false;
+
+	auto path = std::filesystem::path(dialog.getResultPath())
+		.replace_extension(SCHEMATIC_SHEET_EXTW);
+
+	return saveSchematicSheetImpl(sheet, path.generic_string());
+}
+
+bool MainWindow::openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::string& path)
+{
+	std::ifstream file(path);
+
+	if (!file.is_open()) {
+		MessageBox msg_box;
+		msg_box.title   = "Error";
+		msg_box.content = "cannot locate '" + path + "'.";
+		msg_box.buttons = "OK";
+
+		msg_box.showDialog();
+		return false;
+	}
+
+	sheet = std::make_unique<SchematicSheet>();
+	sheet->unserialize(file);
+	sheet->path          = path;
+	sheet->file_saved    = true;
+	sheet->is_up_to_date = true;
+	updateThumbnail(*sheet);
+
+	return true;
+}
+
+bool MainWindow::saveSchematicSheetImpl(const SchematicSheet& sheet, const std::string& path)
+{
+	std::ofstream of(path);
+
+	if (!of.is_open()) {
+		MessageBox msg_box;
+		msg_box.owner   = &window;
+		msg_box.title   = "Error";
+		msg_box.content = "Failed to save schematic sheet";
+		msg_box.buttons = "OK";
+		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
+		return false;
+	}
+
+	sheet.serialize(of);
+
+	return true;
+}
+
+bool MainWindow::deleteSchematicSheet(SchematicSheet& sheet)
+{
+	std::string result;
+
+	if (sheet.file_saved) {
+		MessageBox dialog;
+		dialog.owner    = &window;
+		dialog.title    = "Deleting schematic sheet";
+		dialog.buttons  = "Remove;Delete;Cancel";
+		dialog.content += "Choose Remove to remove '" + sheet.name + SCHEMATIC_SHEET_EXT"' from '" + project_name + "'.\n";
+		dialog.content += "Choose Delete to permanently delete '" + sheet.name + SCHEMATIC_SHEET_EXT"'.";
+
+		result = dialog.showDialog();
+
+		if (result != "Remove" || result != "Delete") return false;
+	}
+	else if (!sheet.empty()) {
+		MessageBox dialog;
+		dialog.owner   = &window;
+		dialog.title   = "Deleting schematic sheet";
+		dialog.buttons = "Remove;Cancel";
+		dialog.content = "Do you want to remove'" + sheet.name + "' from '" + project_name + "'?";
+
+		result = dialog.showDialog();
+
+		if (result != "Remove") return false;
+	}
+
+	if (result == "Delete")
+		std::filesystem::remove(sheet.path);
+
+	for (auto iter = sheets.begin(); iter != sheets.end(); ++iter) {
+		if (iter->get() == &sheet) {
+			sheets.erase(iter);
+			break;
+		}
+	}
+
+	return true;
 }
 
 bool MainWindow::hasUnsavedSchematicSheet() const
 {
 	for (auto& sheet : sheets)
-		if (!sheet->file_saved)
+		if (!sheet->is_up_to_date)
 			return true;
 	return false;
+}
+
+SchematicSheet* MainWindow::findSchematicSheetByPath(const std::string& path)
+{
+	for (auto& sheet : sheets)
+		if (sheet->path == path)
+			return sheet.get();
+	return nullptr;
 }
 
 void MainWindow::updateThumbnail(SchematicSheet& sheet)
@@ -832,6 +1027,19 @@ void MainWindow::showMainMenus()
 		spacing *= 1.5;
 
 		if (ImGui::BeginMenu("File")) {
+			ImGui::Image(ICON_WINDOW, icon_size);
+			ImGui::SameLine();
+			if (ImGui::MenuItem("New Window"))
+				CreateNewProcess();
+
+			ImGui::SetCursorPosX(spacing);
+			if (ImGui::MenuItem("New Project")) {
+				if (closeProject()) {
+					want_open_project = true;
+					new_project_path  = "";
+				}
+			}
+
 			ImGui::SetCursorPosX(spacing);
 			if (ImGui::BeginMenu("Recent...")) {
 				ImGui::EndMenu();
@@ -842,22 +1050,28 @@ void MainWindow::showMainMenus()
 			if (ImGui::MenuItem("Open"))
 				openProject();
 
-			ImGui::Image(ICON_WINDOW, icon_size);
-			ImGui::SameLine();
-			if (ImGui::MenuItem("New Window")) {}
-
 			ImGui::Separator();
+
+			ImGui::Image(ICON_SAVE, icon_size, vk2d::Colors::Gray);
+			ImGui::SameLine();
+			if (project_opened) {
+				if (ImGui::MenuItem("Save Project As...###MenuItemSaveProject"))
+					saveProjectAs();
+			} else {
+				if (ImGui::MenuItem("Save Project###MenuItemSaveProject"))
+					saveProject();
+			}
 
 			if (curr_window_sheet) {
 				auto& ws = *curr_window_sheet;
 
-				std::string save_str = "Save ";
+				std::string save_str = "Save '";
 				save_str += ws.sheet->name;
-				save_str += "###MenuItemSave";
+				save_str += "'###MenuItemSave";
 
 				ImGui::Image(ICON_SAVE, icon_size);
 				ImGui::SameLine();
-				if (ImGui::MenuItem(save_str.c_str(), "Ctrl+S", false, !ws.sheet->file_saved))
+				if (ImGui::MenuItem(save_str.c_str(), "Ctrl+S", false, !ws.sheet->is_up_to_date))
 					saveSchematicSheet(*ws.sheet);
 			} else {
 				ImGui::Image(ICON_SAVE, icon_size, vk2d::Colors::Gray);
@@ -865,31 +1079,28 @@ void MainWindow::showMainMenus()
 				ImGui::MenuItem("Save###MenuItemSave", "Ctrl+S", false, false);
 			}
 
-			ImGui::SetCursorPosX(spacing);
-			if (ImGui::MenuItem("Save Project File"))
-				saveProject(false);
-
-			ImGui::SetCursorPosX(spacing);
-			if (ImGui::MenuItem("Save Project As..."))
-				saveProject(true, true);
-
 			ImGui::Image(ICON_SAVE_ALL, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("Save All", "Ctrl+Shift+S"))
-				saveProject(true);
+				saveAll();
 
 			ImGui::Separator();
 
 			ImGui::Image(ICON_IMPORT, icon_size);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Import Sheet")) {
-
-			}
+			if (ImGui::MenuItem("Import Sheet"))
+				importSchematicSheet();
 
 			ImGui::Image(ICON_EXPORT, icon_size);
 			ImGui::SameLine();
-			if (ImGui::MenuItem("Export Sheet")) {
-				
+			if (curr_window_sheet) {
+				auto& sheet     = *curr_window_sheet->sheet;
+				auto export_str = "Export '" + sheet.name + "'###MenuItemExport";
+
+				if (ImGui::MenuItem(export_str.c_str()))
+					exportSchematicSheet(sheet);
+			} else {
+				ImGui::MenuItem("Export###MenuItemExport", nullptr, nullptr, false);
 			}
 
 			ImGui::Separator();
@@ -997,14 +1208,7 @@ void MainWindow::showMainMenus()
 		}
 
 		ImGui::Separator();
-		if (project_saved)
-			ImGui::TextUnformatted(project_name.c_str());
-		else if (!project_name.empty())
-			ImGui::Text("*%s", project_name.c_str());
-		else if (isProjectEmpty())
-			ImGui::TextUnformatted("(empty project)");
-		else
-			ImGui::TextUnformatted("*(empty project)");
+		ImGui::TextUnformatted(project_name.c_str());
 
 		auto cursor_x = ImGui::GetCursorPosX();
 		auto width    = ImGui::GetWindowWidth();
@@ -1044,7 +1248,7 @@ void MainWindow::showUpperMenus()
 					saveSchematicSheet(*curr_window_sheet->sheet);
 			
 			if (ImGui::ImageButton(ICON_SAVE_ALL, icon_size))
-				saveProject(true);
+				saveAll();
 
 			ImGui::PopStyleVar();
 

@@ -10,33 +10,45 @@ public:
 
 	std::string showDialog() const;
 
-	std::string       buttons; // separated by ;
 	std::string       content;
+	std::string       buttons; // separated by ;
 	vk2d::TextureView icon;
 };
 
-class ProjectCloseDialog : public Dialog {
+class ListMessageBox : public Dialog {
 public:
-	ProjectCloseDialog();
+	ListMessageBox();
 
 	std::string showDialog() const;
+
+	std::string              content;
+	std::vector<std::string> list;
+	std::string              buttons; // separated by ;
+	vk2d::TextureView        icon;
 };
 
 class ProjectSaveDialog : public Dialog {
 public:
 	ProjectSaveDialog();
 
-	std::string showDialog() const;
+	std::string showDialog();
 
-	mutable std::string project_dir;
-	mutable std::string project_name;
-	bool                save_as;
-private:
-	void dialogLoop() const override;
+	bool save_as;
+
+	std::string project_dir;
+	std::string project_name;
+};
+
+class SchematicSheetNameDialog : public Dialog {
+public:
+	SchematicSheetNameDialog();
+
+	std::string showDialog();
+
+	std::string content;
+	std::string parent_dir;
+	std::string sheet_name;
+	std::string buttons; // separated by ;
 	
-	void updateProjectDir() const;
-
-	mutable std::string project_location;
-	mutable std::string result;
-	mutable bool        create_subdirectory;
+	std::string sheet_path;
 };

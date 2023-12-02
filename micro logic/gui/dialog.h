@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui.h>
+#include <functional>
 #include "custom_titlebar.h"
 
 namespace priv {
@@ -14,10 +15,11 @@ public:
 	static void pushImpls(size_t count);
 	static void destroyImpl();
 
+	Dialog(bool resizable);
 	Dialog(const std::string& title, bool resizable);
 	~Dialog();
 
-	std::string         title;
+	mutable std::string title;
 	const vk2d::Window* owner;
 
 private:
@@ -27,6 +29,7 @@ protected:
 	void switchContext() const;
 	void beginShowDialog(ImVec2 window_size) const;
 	void endShowDialog() const;
+	void dialogLoop(const std::function<void()>& loop_func) const;
 	void beginDialogWindow(const char* name, bool* p_open = nullptr, ImGuiWindowFlags flags = 0) const;
 	void endDialogWindow() const; 
 	bool updateDialog() const;
@@ -34,11 +37,10 @@ protected:
 
 	float getDeltaTime() const;
 
-	virtual void dialogLoop() const {}
-	virtual void dialogEventProc(const vk2d::Event& e) {}
 
 	vk2d::Window&   window;
 	CustomTitleBar& titlebar;
+	std::string     result;
 	
 	mutable ImVec2 window_size;
 	mutable ImVec2 client_size;

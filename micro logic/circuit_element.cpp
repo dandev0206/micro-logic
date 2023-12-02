@@ -45,7 +45,7 @@ std::unique_ptr<CircuitElement> CircuitElement::create(std::istream& is)
 		read_binary(is, elem->style);
 		read_binary(is, shared_id);
 		read_binary(is, elem->pos);
-		read_binary(is, elem->dir);
+		read_binary(is, elem->path);
 
 		elem->shared = main_window.logic_gates[shared_id].shared;
 
@@ -60,7 +60,7 @@ std::unique_ptr<CircuitElement> CircuitElement::create(std::istream& is)
 		read_binary(is, elem->style);
 		read_binary(is, shared_id);
 		read_binary(is, elem->pos);
-		read_binary(is, elem->dir);
+		read_binary(is, elem->path);
 
 		elem->shared = main_window.logic_units[shared_id].shared;
 
@@ -113,12 +113,12 @@ bool CircuitElement::isWireBased() const
 
 RigidElement::RigidElement() :
 	pos(0.f, 0.f),
-	dir(Direction::Up)
+	path(Direction::Up)
 {}
 
 AABB RigidElement::getAABB() const
 {
-	AABB aabb = rotate_rect(shared->extent, dir);
+	AABB aabb = rotate_rect(shared->extent, path);
 	return { aabb.min + pos, aabb.max + pos };
 }
 
@@ -133,7 +133,7 @@ bool RigidElement::hit(const vec2& pos) const
 	auto& mask = shared->image_mask;
 	auto size  = mask.size();
 
-	auto p = rotate_vector(pos - this->pos, invert_dir(dir)) - rect.getPosition();
+	auto p = rotate_vector(pos - this->pos, invert_dir(path)) - rect.getPosition();
 	p *= DEFAULT_GRID_SIZE;
 
 	if (p.x < 0 || size.x <= p.x || p.y < 0 || size.y <= p.y) return false;
@@ -143,8 +143,8 @@ bool RigidElement::hit(const vec2& pos) const
 
 void RigidElement::transform(const vec2& delta, const vec2& origin, Direction rotation)
 {
-	pos = rotate_vector(pos + delta - origin, dir) + origin;
-	dir = rotate_dir(dir, rotation);
+	pos = rotate_vector(pos + delta - origin, path) + origin;
+	path = rotate_dir(path, rotation);
 }
 
 uint32_t RigidElement::getSelectFlagsMask() const
@@ -197,7 +197,7 @@ void LogicGate::serialize(std::ostream& os) const
 	write_binary(os, style);
 	write_binary(os, shared->shared_id);
 	write_binary(os, pos);
-	write_binary(os, dir);
+	write_binary(os, path);
 }
 
 std::unique_ptr<CircuitElement> LogicGate::clone(int32_t new_id) const
@@ -227,10 +227,10 @@ void LogicGate::draw(vk2d::DrawList& draw_list) const
 	vec2 p2(rect.left + x, rect.top + y);
 	vec2 p3(rect.left, rect.top + y);
 
-	p0 = rotate_vector(p0, dir) + pos;
-	p1 = rotate_vector(p1, dir) + pos;
-	p2 = rotate_vector(p2, dir) + pos;
-	p3 = rotate_vector(p3, dir) + pos;
+	p0 = rotate_vector(p0, path) + pos;
+	p1 = rotate_vector(p1, path) + pos;
+	p2 = rotate_vector(p2, path) + pos;
+	p3 = rotate_vector(p3, path) + pos;
 
 	vk2d::Vertex v0(p0, color, { texture_rect.left, texture_rect.top });
 	vk2d::Vertex v1(p1, color, { texture_rect.left + tx, texture_rect.top });

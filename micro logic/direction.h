@@ -9,12 +9,12 @@ enum class Direction {
 	Left  = 3,
 };
 
-inline float to_degree(Direction dir) {
-	return (float)dir * 90.f;
+inline float to_degree(Direction path) {
+	return (float)path * 90.f;
 }
 
-inline Direction invert_dir(Direction dir) {
-	switch (dir) {
+inline Direction invert_dir(Direction path) {
+	switch (path) {
 	case Direction::Up:    return Direction::Up;
 	case Direction::Right: return Direction::Left;
 	case Direction::Down:  return Direction::Down;
@@ -23,20 +23,20 @@ inline Direction invert_dir(Direction dir) {
 	}
 }
 
-inline Direction rotate_cw(Direction dir) {
-	return (Direction)(((int)dir + 1) % 4);
+inline Direction rotate_cw(Direction path) {
+	return (Direction)(((int)path + 1) % 4);
 }
 
-inline Direction rotate_ccw(Direction dir) {
-	return (Direction)(((int)dir + 3) % 4);
+inline Direction rotate_ccw(Direction path) {
+	return (Direction)(((int)path + 3) % 4);
 }
 
-inline Direction rotate_dir(Direction dir, Direction rotation) {
-	return (Direction)(((int)dir + (int)rotation) % 4);
+inline Direction rotate_dir(Direction path, Direction rotation) {
+	return (Direction)(((int)path + (int)rotation) % 4);
 }
 
-inline vec2 rotate_vector(const vec2& v, Direction dir) {
-	switch (dir) {
+inline vec2 rotate_vector(const vec2& v, Direction path) {
+	switch (path) {
 	case Direction::Up:    return { v.x, v.y };
 	case Direction::Right: return { -v.y, v.x };
 	case Direction::Down:  return { -v.x, -v.y };
@@ -45,8 +45,8 @@ inline vec2 rotate_vector(const vec2& v, Direction dir) {
 	}
 }
 
-inline Rect rotate_rect(const Rect& rect, Direction dir) {
-	switch (dir) {
+inline Rect rotate_rect(const Rect& rect, Direction path) {
+	switch (path) {
 	case Direction::Up:
 		return rect;
 	case Direction::Right:

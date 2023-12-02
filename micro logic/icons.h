@@ -4,6 +4,8 @@
 #define ICON_TEXTURE_VAR icons
 #endif
 
+#include <vk2d/graphics/texture_view.h>
+
 #define ICON_INFORMATION   ICON_TEXTURE_VAR, { 0, 0, 100, 100 }
 #define ICON_MAG_GLASS     ICON_TEXTURE_VAR, { 100, 0, 100, 100 }
 #define ICON_ARROW_POINTER ICON_TEXTURE_VAR, { 200, 0, 100, 100 }
@@ -68,3 +70,8 @@
 
 #define ICON_ERROR_BIG     ICON_TEXTURE_VAR, { 0, 700, 200, 200 }
 #define ICON_WARNING_BIG   ICON_TEXTURE_VAR, { 200, 700, 200, 200 }
+
+static vk2d::TextureView& icon_to_texture_view(const vk2d::Texture& texture, const uRect& rect) 
+{
+	return vk2d::TextureView(texture).setRegion(rect);
+}

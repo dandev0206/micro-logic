@@ -1,9 +1,11 @@
 #pragma once
 
+#include "render_options.h"
 #include "vertex_buffer.h"
 #include "buffer.h"
 #include "drawable.h"
 #include "vertex.hpp"
+#include "../Rect.hpp"
 
 #include <vector>
 

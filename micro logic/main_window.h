@@ -26,8 +26,8 @@ public:
 	using SchematicSheetPtr_t = std::unique_ptr<SchematicSheet>;
 	using Window_SheetPtr_t   = std::unique_ptr<Window_Sheet>;
 	
-	using clock_t          = std::chrono::system_clock;
-	using timepoint_t      = clock_t::time_point;
+	using clock_t     = std::chrono::system_clock;
+	using timepoint_t = clock_t::time_point;
 
 	MainWindow();
 	~MainWindow();
@@ -41,14 +41,13 @@ public:
 
 	void initializeProject();
 	bool openProject();
-	bool saveProject(bool save_sheet, bool save_as = false);
+	bool saveAll();
+	bool saveProjectAs();
+	bool saveProject();
 	bool closeProject();
 	bool openProjectImpl(const std::string& project_path);
 	bool closeProjectImpl();
-	void loadProjectIni();
-	void saveProjectIni();
 	bool isProjectOpened() const;
-	bool isProjectAllSaved() const;
 	bool isProjectEmpty() const;
 
 	template <class Menu_T>
@@ -56,12 +55,15 @@ public:
 	SideMenu& getCurrentSideMenu();
 	void setCurrentSideMenu(SideMenu* menu);
 
-	void importSchematicSheetDialog();
-	void exportSchematicSheetDialog();
-	void addSchematicSheet();
+	bool addSchematicSheet();
 	bool saveSchematicSheet(SchematicSheet& sheet);
-	void deleteSchematicSheet(SchematicSheet& sheet);
+	bool importSchematicSheet();
+	bool exportSchematicSheet(const SchematicSheet& sheet);
+	bool openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::string& path);
+	bool saveSchematicSheetImpl(const SchematicSheet& sheet, const std::string& path);
+	bool deleteSchematicSheet(SchematicSheet& sheet);
 	bool hasUnsavedSchematicSheet() const;
+	SchematicSheet* findSchematicSheetByPath(const std::string& path);
 
 	void updateThumbnail(SchematicSheet& sheet);
 
@@ -127,7 +129,6 @@ public:
 public: // project
 	std::string project_dir;
 	std::string project_name;
-	std::string project_ini_name;
 
 	std::vector<SchematicSheetPtr_t> sheets;
 	std::vector<Window_SheetPtr_t>   window_sheets;
@@ -138,7 +139,7 @@ public: // project
 
 	timepoint_t last_time;
 	
-	bool project_saved;
+	bool project_opened;
 
 public: // windows
 	Window_Settings window_settings;

@@ -92,7 +92,7 @@ public:
 	std::shared_ptr<Shared> shared;
 
 	vec2      pos;
-	Direction dir;
+	Direction path;
 };
 
 class LogicGate : public RigidElement {

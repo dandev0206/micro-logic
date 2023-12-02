@@ -36,7 +36,7 @@ void Window_Explorer::showUI()
 			ImGui::SetCursorPosX((content_rect.width - child_width) / 2 + 5);
 			ImGui::BeginChild((ImGuiID)(i + 10), child_size, child_flags, window_flags);
 
-			if (sheet->file_saved)
+			if (sheet->is_up_to_date)
 				ImGui::Text("#%d - %s", i, sheet->name.c_str());
 			else
 				ImGui::Text("#%d - *%s", i, sheet->name.c_str());
@@ -69,7 +69,8 @@ void Window_Explorer::showUI()
 		if (ImGui::ImageButton(ICON_PLUS, vec2(180, 60)))
 			main_window.addSchematicSheet();
 
-		main_window.deleteSchematicSheet(*delete_sheet);
+		if (delete_sheet)
+			main_window.deleteSchematicSheet(*delete_sheet);
 
 		ImGui::TextUnformatted("");
 	}

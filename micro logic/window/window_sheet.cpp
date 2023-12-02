@@ -45,7 +45,7 @@ void Window_Sheet::showUI()
 	auto& main_window = MainWindow::get();
 
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoBackground;
-	if (!sheet->file_saved) flags |= ImGuiWindowFlags_UnsavedDocument;
+	if (!sheet->is_up_to_date) flags |= ImGuiWindowFlags_UnsavedDocument;
 
 	DockingWindow::beginDockWindow(name.c_str(), &show, flags);
 
@@ -153,8 +153,6 @@ bool Window_Sheet::isCommandInSavedRange(int64_t cmd_idx) const
 
 void Window_Sheet::sheetSaved()
 {
-	sheet->file_saved = true;
-
 	last_saved_command_min = curr_command;
 	last_saved_command_max = curr_command;
 
@@ -181,8 +179,8 @@ void Window_Sheet::bindSchematicSheet(SchematicSheet& sheet)
 
 	command_stack.clear();
 	curr_command           = -1;
-	last_saved_command_min = sheet.file_saved ? -2 : -1;
-	last_saved_command_max = sheet.file_saved ? -2 : -1;
+	last_saved_command_min = sheet.is_up_to_date ? -1 : -2;
+	last_saved_command_max = sheet.is_up_to_date ? -1 : -2;
 
 	this->sheet   = &sheet;
 	name          = sheet.name + "###" + sheet.guid;
@@ -288,7 +286,7 @@ void Window_Sheet::pushCommand(std::unique_ptr<Command>&& cmd, bool skip_redo)
 
 	command_stack.push_back(std::move(cmd));
 
-	sheet->file_saved = isCommandInSavedRange(curr_command);
+	sheet->is_up_to_date = isCommandInSavedRange(curr_command);
 }
 
 void Window_Sheet::setCurrCommandTo(int64_t next_cmd)
@@ -313,7 +311,7 @@ void Window_Sheet::setCurrCommandTo(int64_t next_cmd)
 	if (modified)
 		MainWindow::get().updateThumbnail(*sheet);
 
-	sheet->file_saved = isCommandInSavedRange(curr_command);
+	sheet->is_up_to_date = isCommandInSavedRange(curr_command);
 }
 
 void Window_Sheet::redo()
@@ -326,7 +324,7 @@ void Window_Sheet::redo()
 	if (cmd->isModifying())
 		MainWindow::get().updateThumbnail(*sheet);
 
-	sheet->file_saved = isCommandInSavedRange(curr_command);
+	sheet->is_up_to_date = isCommandInSavedRange(curr_command);
 }
 
 void Window_Sheet::undo()
@@ -339,7 +337,7 @@ void Window_Sheet::undo()
 	if (cmd->isModifying())
 		MainWindow::get().updateThumbnail(*sheet);
 
-	sheet->file_saved = isCommandInSavedRange(curr_command);
+	sheet->is_up_to_date = isCommandInSavedRange(curr_command);
 }
 
 bool Window_Sheet::isRedoable() const
