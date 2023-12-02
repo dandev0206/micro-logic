@@ -281,6 +281,40 @@ void MainWindow::eventProc(const vk2d::Event& e)
 	using vk2d::Key;
 
 	switch (e.type) {
+	case Event::KeyPressed: {
+		bool ctrl = vk2d::Keyboard::isKeyPressed(Key::LControl);
+		bool shft = vk2d::Keyboard::isKeyPressed(Key::LShift);
+		bool alt  = vk2d::Keyboard::isKeyPressed(Key::LAlt);
+
+		switch (e.keyboard.key) {
+		case Key::X:
+			if (ctrl && !shft && !alt && curr_window_sheet)
+				curr_window_sheet->copySelectedToClipboard();
+			break;
+		case Key::C:
+			if (ctrl && !shft && !alt && curr_window_sheet)
+				curr_window_sheet->cutSelectedToClipboard();
+			break;
+		case Key::V:
+			if (ctrl && !shft && !alt && curr_window_sheet)
+				beginClipboardPaste();
+			break;
+		case Key::S:
+			if (ctrl && shft && !alt && shft)
+				saveAll();
+			else if (ctrl && !shft && !alt && curr_window_sheet)
+				saveSchematicSheet(*curr_window_sheet->sheet);
+			break;
+		case Key::Z:
+			if (ctrl && !shft && !alt && isUndoable())
+				undo();
+			break;
+		case Key::Y:
+			if (ctrl && !shft && !alt && isRedoable())
+				redo();
+			break;
+		}
+	} break;
 	case Event::Close:
 		closeWindow();
 		break;
@@ -464,6 +498,7 @@ bool MainWindow::saveProject()
 
 	if (res != tinyxml2::XMLError::XML_SUCCESS) {
 		MessageBox msg_box;
+		msg_box.owner   = &window;
 		msg_box.title   = "Error";
 		msg_box.content = "Error occured while saving project '" + project_name + PROJECT_EXT"'";
 		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
@@ -532,6 +567,7 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 
 			if (elem->Attribute("guid") != sheet->guid) {
 				MessageBox msg_box;
+				msg_box.owner   = &window;
 				msg_box.title   = "Error";
 				msg_box.content = "guid of sheet '" + sheet->name + "' is different";
 				msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
@@ -548,6 +584,7 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 		
 		if (elem->GetText() == nullptr) {
 			MessageBox msg_box;
+			msg_box.owner   = &window;
 			msg_box.title   = "Error";
 			msg_box.content = "cannot load imgui ini settings";
 			msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
@@ -763,6 +800,7 @@ bool MainWindow::openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::s
 
 	if (!file.is_open()) {
 		MessageBox msg_box;
+		msg_box.owner   = &window;
 		msg_box.title   = "Error";
 		msg_box.content = "cannot locate '" + path + "'.";
 		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
@@ -1055,7 +1093,7 @@ void MainWindow::showMainMenus()
 
 			ImGui::Separator();
 
-			ImGui::Image(ICON_SAVE, icon_size, vk2d::Colors::Gray);
+			ImGui::Image(ICON_SAVE, icon_size);
 			ImGui::SameLine();
 			if (project_opened) {
 				if (ImGui::MenuItem("Save Project As...###MenuItemSaveProject"))
@@ -1168,7 +1206,10 @@ void MainWindow::showMainMenus()
 			ImGui::Separator();
 
 			ImGui::SetCursorPosX(spacing);
-			ImGui::MenuItem("Grid", nullptr, &settings.view.grid);
+			if (ImGui::MenuItem("Grid", nullptr, &settings.view.grid)) {
+				for (auto& ws : window_sheets)
+					ws->update_grid = true;
+			}
 
 			ImGui::Separator();
 			
