@@ -4,9 +4,11 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <windowsx.h>
+#include <timeapi.h>
 #include <dwmapi.h>
 #include "platform_impl.h"
 
+#pragma comment(lib, "Winmm.lib")
 #pragma comment(lib, "dwmapi.lib")
 
 struct TitlebarWindowData {
@@ -224,6 +226,15 @@ void CreateNewProcess()
 
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
+}
+
+void SleepMS(uint32_t milliseconds)
+{
+	TIMECAPS tc;
+	timeGetDevCaps(&tc, sizeof(TIMECAPS));
+	timeBeginPeriod(tc.wPeriodMin);
+	Sleep(static_cast<DWORD>(milliseconds));
+	timeEndPeriod(tc.wPeriodMin);
 }
 
 void InjectTitleBar(CustomTitleBar* titlebar)

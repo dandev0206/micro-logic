@@ -14,7 +14,6 @@ static void event_proc(const vk2d::Event& e, float dt, void* user_data)
 }
 
 DockingWindow::DockingWindow() :
-	window_name(nullptr),
 	id(0),
 	viewport(nullptr),
 	window(nullptr),
@@ -22,7 +21,8 @@ DockingWindow::DockingWindow() :
 	hovered(false),
 	focussed(false),
 	show(true),
-	visible(false)
+	visible(false),
+	window_name(nullptr)
 {}
 
 void DockingWindow::EventProcWrapper(const vk2d::Event& e, float dt)
@@ -57,7 +57,6 @@ void DockingWindow::beginDockWindow(const char* name, bool* p_open, ImGuiWindowF
 	auto pos      = to_vec2(ImGui::GetWindowPos()) - to_vec2(ImGui::GetWindowViewport()->Pos);
 	auto padding  = to_vec2(ImGui::GetStyle().WindowPadding);
 
-	window_name    = name;
 	id		       = ImGui::GetID(this);
 	viewport       = ImGui::GetCurrentWindow()->Viewport;
 	window	       = (vk2d::Window*)ImGui::GetWindowViewport()->PlatformHandle;
@@ -71,6 +70,8 @@ void DockingWindow::beginDockWindow(const char* name, bool* p_open, ImGuiWindowF
 
 	focussed = ImGui::IsWindowFocused();
 	hovered  = ImGui::IsWindowHovered();
+
+	window_name = name;
 }
 
 void DockingWindow::endDockWindow()

@@ -10,11 +10,11 @@ public:
 protected:
 	void initResizingLoop(const vk2d::Window& window);
 
-	void setFrameLimit(int32_t fps);
-
 public:
 	virtual void loop();
 	virtual void eventProc(const vk2d::Event& e) {};
+	
+	void setFrameLimit(int32_t fps);
 
 	float delta_time;
 	bool  resize_tab_hovered;

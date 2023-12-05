@@ -52,7 +52,23 @@ vk2d::Window& CustomTitleBar::getWindow() const
 bool CustomTitleBar::beginTitleBar()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-	return ImGui::BeginMainMenuBar();
+	
+	if (ImGui::BeginMainMenuBar()) {
+		if (!icon.empty()) {
+			ImGui::SetCursorPos(ImVec2(10, 10));
+			ImGui::Image(icon, vec2(25, 25));
+			ImGui::SetCursorPosX(45);
+		}
+
+		if (!title.empty()) {
+			ImGui::SetCursorPosY(3);
+			ImGui::TextUnformatted(title.c_str());
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 void CustomTitleBar::endTitleBar()
@@ -94,6 +110,26 @@ void CustomTitleBar::endTitleBar()
 	ImGui::PopStyleColor(3);
 	ImGui::PopStyleVar(3);
 	ImGui::EndMainMenuBar();
+}
+
+vk2d::TextureView CustomTitleBar::getIcon() const
+{
+	return icon;
+}
+
+void CustomTitleBar::setIcon(const vk2d::TextureView& icon)
+{
+	this->icon = icon;
+}
+
+std::string CustomTitleBar::getTitle() const
+{
+	return title;
+}
+
+void CustomTitleBar::setTitle(const std::string& title)
+{
+	this->title = title;
 }
 
 Rect CustomTitleBar::getCaptionRect() const

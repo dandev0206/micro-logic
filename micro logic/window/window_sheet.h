@@ -7,9 +7,6 @@
 #include "../schematic_sheet.h"
 #include "../command.h"
 
-#define CLIPBOARD_CUT_IDENTIFICATION  "[BBE7BD64-510B-4A27-85EF-A74204089557]"
-#define CLIPBOARD_COPY_IDENTIFICATION "[A8ECDC3F-A527-45BB-8AEC-9D19EC0BA190]"
-
 enum class GridStyle {
 	line,
 	dot
@@ -18,6 +15,7 @@ enum class GridStyle {
 class Window_Sheet : public DockingWindow {
 public:
 	using bvh_iterator_t = typename BVH<std::unique_ptr<CircuitElement>>::iterator;
+	using CommandStack_t = std::vector<std::unique_ptr<Command>>;
 
 	Window_Sheet();
 	Window_Sheet(SchematicSheet& sheet);
@@ -76,17 +74,16 @@ public:
 	BVH<std::unique_ptr<CircuitElement>>& getBVH();
 
 public:
+	std::string     window_name;
 	SchematicSheet* sheet;
-	vk2d::DrawList  draw_list;
 
-	std::vector<std::unique_ptr<Command>> command_stack;
-	int64_t                               curr_command;
-	int64_t                               last_saved_command_min;
-	int64_t                               last_saved_command_max;
+	vk2d::DrawList draw_list;
+	CommandStack_t command_stack;
+	int64_t        curr_command;
+	int64_t        last_saved_command_min;
+	int64_t        last_saved_command_max;
 
 	std::vector<bvh_iterator_t> hover_list;
-
-	std::string name;
 
 	vec2  content_center;
 	vec2  prev_position;

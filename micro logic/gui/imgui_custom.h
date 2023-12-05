@@ -38,4 +38,6 @@ namespace ImGui
 	bool ZoomSlider(const char* label, float* v, float v_min, float v_max);
 
 	bool ColorEdit4(const char* label, vk2d::Color* col, int flags = 0);
+
+	void MakeTabVisible(const char* window_name);
 }

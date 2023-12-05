@@ -58,6 +58,9 @@ void Window_Explorer::showUI()
 			if (ImGui::Selectable("##Selectable", false, ImGuiSelectableFlags_AllowDoubleClick, button_size)) {
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					main_window.openWindowSheet(*main_window.sheets[i]);
+				else if (auto* ws = main_window.findWindowSheet(*sheet)) {
+					ImGui::MakeTabVisible(ws->window_name.c_str());
+				}
 			}
 			ImGui::PopID();
 

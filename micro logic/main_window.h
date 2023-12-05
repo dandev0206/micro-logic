@@ -71,6 +71,7 @@ public:
 	void closeUnvisibleWindowSheet();
 	Window_Sheet& getCurrentWindowSheet();
 	void setCurrentWindowSheet(Window_Sheet* window_sheet);
+	Window_Sheet* findWindowSheet(const SchematicSheet& sheet);
 
 	void postStatusMessage(const std::string& str);
 	void postInfoMessage(const std::string& str, bool force = false);
@@ -91,7 +92,7 @@ public:
 	void showFPS();
 
 public: // settings
-	struct {
+	struct Settings {
 		struct {
 			bool      grid;
 			bool      grid_axis;
@@ -105,11 +106,19 @@ public: // settings
 		} view;
 
 		struct {
+			bool enable_vsync;
+			bool frame_limit;
+			int  max_fps;
+		} rendering;
+
+		struct {
 			bool show_bvh;
 			bool show_chunks;
 			bool show_fps;
 			bool show_imgui_demo;
 		} debug;
+
+		int curr_settings_menu;
 	} settings;
 
 public:
@@ -141,7 +150,6 @@ public: // project
 	bool project_opened;
 
 public: // windows
-	Window_Settings window_settings;
 	Window_Library  window_library;
 	Window_History  window_history;
 	Window_Explorer window_explorer;

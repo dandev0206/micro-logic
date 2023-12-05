@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include <functional>
+#include <vk2d/graphics/texture_view.h>
 #include "custom_titlebar.h"
 
 namespace priv {
@@ -17,6 +18,7 @@ public:
 
 	Dialog(bool resizable);
 	Dialog(const std::string& title, bool resizable);
+	Dialog(const vk2d::TextureView& title_icon, const std::string& title, bool resizable);
 	~Dialog();
 
 	mutable std::string title;
@@ -36,7 +38,6 @@ protected:
 	void renderDialog() const;
 
 	float getDeltaTime() const;
-
 
 	vk2d::Window&   window;
 	CustomTitleBar& titlebar;

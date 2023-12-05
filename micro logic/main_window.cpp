@@ -145,8 +145,9 @@ MainWindow::MainWindow() :
 	initializeProject();
 	ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
 
-	ResizingLoop::setFrameLimit(FRAME_LIMIT);
+	ResizingLoop::setFrameLimit(60);
 	ResizingLoop::initResizingLoop(window);
+	Dialog::pushImpls(3);
 	window.setVisible(true);
 }
 
@@ -164,9 +165,9 @@ void MainWindow::show()
 			eventProc(e);
 
 		if (want_open_project) {
-			closeProjectImpl();
 
 			if (new_project_path.empty()) {
+				closeProjectImpl();
 				initializeProject();
 				ImGui::LoadIniSettingsFromDisk(RESOURCE_DIR_NAME"default.ini");
 			} else
@@ -221,7 +222,6 @@ void MainWindow::loop() {
 	if (curr_window_sheet)
 		getCurrentWindowSheet().clearHoverList();
 
-	window_settings.showUI();
 	window_library.showUI();
 	window_history.showUI();
 	window_explorer.showUI();
@@ -337,10 +337,16 @@ void MainWindow::initializeProject()
 		settings.view.grid_axis_color    = Color(1.f, 1.f, 1.f, 0.7f);
 		settings.view.library_window     = true;
 
+		settings.rendering.enable_vsync = false;
+		settings.rendering.frame_limit  = true;
+		settings.rendering.max_fps      = 60;
+
 		settings.debug.show_bvh        = false;
 		settings.debug.show_chunks     = false;
 		settings.debug.show_fps        = false;
 		settings.debug.show_imgui_demo = false;
+
+		settings.curr_settings_menu = 0;
 	}
 	{ // init ImGui
 		ImGui::VK2D::Init(window, false);
@@ -521,8 +527,6 @@ bool MainWindow::closeProject()
 
 bool MainWindow::openProjectImpl(const std::string& project_path)
 {
-	assert(!initialized);
-
 	std::string                      imgui_ini;
 	std::vector<SchematicSheetPtr_t> new_sheets;
 
@@ -542,7 +546,7 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 			std::string full_path = new_project_dir + "\\" + file_path;	
 
 			SchematicSheetPtr_t sheet;
-			if (openSchematicSheetImpl(sheet, full_path)) return false;
+			if (!openSchematicSheetImpl(sheet, full_path)) return false;
 
 			if (elem->Attribute("guid") != sheet->guid) {
 				MessageBox msg_box;
@@ -575,6 +579,7 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 		imgui_ini = Base64::decode(elem->GetText());
 	}
 
+	closeProjectImpl();
 	initializeProject();
 	ImGui::LoadIniSettingsFromMemory(imgui_ini.c_str());
 
@@ -919,7 +924,7 @@ bool MainWindow::openWindowSheet(SchematicSheet& sheet)
 {
 	for (auto& ws : window_sheets) {
 		if (ws->sheet == &sheet) {
-			auto* window = ImGui::FindWindowByName(ws->name.c_str());
+			auto* window = ImGui::FindWindowByName(ws->window_name.c_str());
 			window->DockNode->TabBar->NextSelectedTabId = window->ID;;
 			return true;
 		}
@@ -932,7 +937,7 @@ bool MainWindow::openWindowSheet(SchematicSheet& sheet)
 	for (int i = 0; i < dc.Nodes.Data.Size; ++i) {
 		if (auto* node = (ImGuiDockNode*)dc.Nodes.Data[i].val_p) {
 			ImGuiID id = ImGui::DockBuilderGetCentralNode(node->ID)->ID;
-			ImGui::DockBuilderDockWindow(ws->name.c_str(), id);
+			ImGui::DockBuilderDockWindow(ws->window_name.c_str(), id);
 			return true;
 		}
 	}
@@ -971,6 +976,14 @@ void MainWindow::setCurrentWindowSheet(Window_Sheet* window_sheet)
 
 	if (curr_window_sheet && curr_menu)
 		curr_menu->onBegin();
+}
+
+Window_Sheet* MainWindow::findWindowSheet(const SchematicSheet& sheet)
+{
+	for (const auto& ws : window_sheets)
+		if (ws->sheet == &sheet)
+			return ws.get();
+	return nullptr;
 }
 
 void MainWindow::postStatusMessage(const std::string& str)
@@ -1225,7 +1238,10 @@ void MainWindow::showMainMenus()
 			ImGui::Image(ICON_GEAR, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("Settings...")) {
-				window_settings.show = true;
+				SettingsDialog dialog;
+				dialog.owner = &window;
+
+				dialog.showDialog();
 			}
 			ImGui::EndMenu();
 		}

@@ -47,7 +47,7 @@ void Window_Sheet::showUI()
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoBackground;
 	if (!sheet->is_up_to_date) flags |= ImGuiWindowFlags_UnsavedDocument;
 
-	DockingWindow::beginDockWindow(name.c_str(), &show, flags);
+	DockingWindow::beginDockWindow(window_name.c_str(), &show, flags);
 
 	if (visible && content_rect.width != 0 && content_rect.height != 0) {
 		ImGui::InvisibleButton("##InvisibleButton", { to_ImVec2(content_rect.getSize()) });
@@ -183,7 +183,7 @@ void Window_Sheet::bindSchematicSheet(SchematicSheet& sheet)
 	last_saved_command_max = sheet.is_up_to_date ? -1 : -2;
 
 	this->sheet   = &sheet;
-	name          = sheet.name + "###" + sheet.guid;
+	window_name   = sheet.name + "###" + sheet.guid;
 	prev_position = sheet.position;
 	prev_scale    = sheet.scale;
 	update_grid   = true;
@@ -427,17 +427,6 @@ void Window_Sheet::showGrid()
 
 			for (float x = min_x; x < max_x; x += delta)
 				cmd.addLine(vec2(x, min_y), vec2(x, max_y), width, color);
-
-			/*auto rect = toPlane(content_rect);
-			auto pos  = rect.getPosition();
-			auto size = rect.getSize();
-
-			vertices.push_back({ vec2(pos.x, pos.y), vk2d::Colors::Red });
-			vertices.push_back({ vec2(pos.x + size.x, pos.y), vk2d::Colors::Green });
-			vertices.push_back({ vec2(pos.x + size.x, pos.y + size.y), vk2d::Colors::Blue });
-			vertices.push_back({ vec2(pos.x, pos.y), vk2d::Colors::Red });
-			vertices.push_back({ vec2(pos.x, pos.y + size.y), vk2d::Colors::Green });
-			vertices.push_back({ vec2(pos.x + size.x, pos.y + size.y), vk2d::Colors::Blue });*/
 		}
 
 		update_grid = false;

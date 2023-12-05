@@ -2,6 +2,8 @@
 
 #include "dialogs.h"
 
+#define ICON_TEXTURE_VAR MainWindow::get().textures[TEXTURE_ICONS_IDX]
+
 #include <vk2d/system/file_dialog.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
@@ -10,6 +12,8 @@
 #include "gui/imgui_impl_vk2d.h"
 #include "gui/imgui_custom.h"
 #include "util/convert_string.h"
+#include "main_window.h"
+#include "icons.h"
 #include "micro_logic_config.h"
 
 #define TITLE_BAR_HEIGHT 45.f
@@ -144,7 +148,7 @@ std::string MessageBox::showDialog() const
 			ImGui::Image(icon, to_vec2(ICON_SIZE));
 
 		ImGui::SameLine();
-		ImGui::TextUnformatted(content.c_str());
+		ImGui::TextWrapped(content.c_str());
 
 		ImGui::SetCursorPos(client_size - buttons_size - WINDOW_PADDING);
 		for (const auto& name : button_names) {
@@ -231,16 +235,193 @@ std::string ListMessageBox::showDialog() const
 	return result;
 }
 
+SettingsDialog::SettingsDialog() :
+	Dialog(icon_to_texture_view(ICON_GEAR), "Settings", true)
+{}
+
+void SettingsDialog::showDialog()
+{
+	auto& main_window     = MainWindow::get();
+	std::string result    = "Close";
+	auto settings         = main_window.settings;
+	int curr_setting_menu = settings.curr_settings_menu;
+
+	Dialog::switchContext();
+
+	Dialog::beginShowDialog(ImVec2(1000, 800));
+
+	vec2 menu_button_size(250, 60);
+	auto buttons_size = calc_buttons_size("OK;Cancel");
+
+	float preview_scale = 1.f;
+
+	Dialog::dialogLoop([&] {
+		Dialog::beginDialogWindow("Settings", nullptr, window_flags);
+
+		ImGui::RadioButton("General##Settings", &curr_setting_menu, 0, menu_button_size);
+		ImGui::RadioButton("Rendering##Settings", &curr_setting_menu, 1, menu_button_size);
+		ImGui::RadioButton("Grid##Settings", &curr_setting_menu, 2, menu_button_size);
+		ImGui::RadioButton("Simulation##Settings", &curr_setting_menu, 3, menu_button_size);
+		ImGui::RadioButton("Settings0##Settings", &curr_setting_menu, 4, menu_button_size);
+		ImGui::RadioButton("Settings1##Settings", &curr_setting_menu, 5, menu_button_size);
+		ImGui::RadioButton("Settings2##Settings", &curr_setting_menu, 6, menu_button_size);
+
+		auto child_height = client_size.y - buttons_size.y - 2 * WINDOW_PADDING_HEIGHT - SPACING_HEIGHT;
+		ImGui::SetCursorPos(ImVec2(menu_button_size.x + 2.f * WINDOW_PADDING_WIDTH, WINDOW_PADDING_HEIGHT));
+		ImGui::BeginChild("##Settings Child", ImVec2(0, child_height), ImGuiChildFlags_Border);
+
+		if (curr_setting_menu == 0) {
+
+		} else if (curr_setting_menu == 1) {
+			ImGui::Checkbox("Enable vSync", &settings.rendering.enable_vsync);
+
+			ImGui::BeginDisabled(settings.rendering.enable_vsync);
+			ImGui::Checkbox("Frame Limit", &settings.rendering.frame_limit);
+
+			ImGui::TextUnformatted("Max FPS");
+			ImGui::BeginDisabled(!settings.rendering.frame_limit);
+			ImGui::InputInt("##Max FPS", &settings.rendering.max_fps);
+			
+			ImGui::EndDisabled();
+			ImGui::EndDisabled();
+		} else if (curr_setting_menu == 2) {
+			ImGui::TextUnformatted("preview");
+			ImGui::BeginChild("preview", ImVec2(0, 200), ImGuiChildFlags_Border | ImGuiChildFlags_ResizeY);
+			auto pos             = ImGui::GetWindowPos();
+			auto size            = ImGui::GetWindowSize();
+			auto grid_pixel_size = preview_scale * DEFAULT_GRID_SIZE;
+
+			auto pos_min = ImVec2(pos.x, std::max(pos.y, TITLE_BAR_HEIGHT + WINDOW_PADDING_HEIGHT));
+			auto pos_max = ImVec2(pos.x + size.x, std::max(pos.y + size.y, TITLE_BAR_HEIGHT + WINDOW_PADDING_HEIGHT));
+			auto center  = pos + size / 2.f;
+
+			auto* draw_list = ImGui::GetForegroundDrawList();
+
+			draw_list->PushClipRect(pos_min, pos_max);
+			draw_list->AddRectFilled(pos_min, pos_max, 0x000000ff);
+
+			if (settings.view.grid_axis) {
+				float width = settings.view.grid_axis_width;
+				auto color  = settings.view.grid_axis_color;
+
+				draw_list->AddLine(ImVec2(pos_min.x, center.y), ImVec2(pos_max.x, center.y), to_ImColor(color), width);
+				draw_list->AddLine(ImVec2(center.x, pos_min.y), ImVec2(center.x, pos_max.y), to_ImColor(color), width);
+			}
+
+			if (settings.view.grid_style == GridStyle::dot) {
+				auto delta     = grid_pixel_size;
+				auto padding   = ImVec2(settings.view.grid_width, settings.view.grid_width) / 2.f;
+				auto half_size = size / 2.f;
+				auto color     = settings.view.grid_color;
+
+				for (float x = 0; x < half_size.x; x += delta) {
+					for (float y = 0; y <= half_size.y; y += delta) {
+						draw_list->AddRectFilled(center + ImVec2(x, y) - padding, center + ImVec2(x, y) + padding, to_ImColor(color));
+						draw_list->AddRectFilled(center + ImVec2(x, -y) - padding, center + ImVec2(x, -y) + padding, to_ImColor(color));
+						draw_list->AddRectFilled(center + ImVec2(-x, y) - padding, center + ImVec2(-x, y) + padding, to_ImColor(color));
+						draw_list->AddRectFilled(center + ImVec2(-x, -y) - padding, center + ImVec2(-x, -y) + padding, to_ImColor(color));
+					}
+				}
+			} else {
+				auto width = settings.view.grid_width;
+				auto delta = grid_pixel_size;
+				auto color = settings.view.grid_color;
+
+				for (float y = center.y; y <= pos_max.y; y += delta) {
+					draw_list->AddLine(ImVec2(pos_min.x, y), ImVec2(pos_max.x, y), to_ImColor(color), width);
+					draw_list->AddLine(ImVec2(pos_min.x, 2.f * center.y - y), ImVec2(pos_max.x, 2.f * center.y - y), to_ImColor(color), width);
+				}
+
+				for (float x = center.x; x < pos_max.x; x += delta) {
+					draw_list->AddLine(ImVec2(x, pos_min.y), ImVec2(x, pos_max.y), to_ImColor(color), width);
+					draw_list->AddLine(ImVec2(2.f * center.x - x, pos_min.y), ImVec2(2.f * center.x - x, pos_max.y), to_ImColor(color), width);
+				}
+			}
+			draw_list->PopClipRect();
+
+			ImGui::EndChild();
+
+			ImGui::SetCursorPosX(size.x - 400);
+			if (ImGui::ImageButton(ICON_MAG_MINUS, { 17, 17 })) preview_scale /= 1.05f;
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(200);
+			ImGui::ZoomSlider("##Zoom Slider", &preview_scale, MIN_SCALE, MAX_SCALE);
+			ImGui::SameLine();
+			if (ImGui::ImageButton(ICON_MAG_PLUS, { 17, 17 })) preview_scale *= 1.05f;
+			ImGui::SameLine();
+			ImGui::Text("%.1f%%", 100.f * preview_scale);
+
+			ImGui::TextUnformatted("Style");
+			ImGui::Combo("##ComboStyle", (int*)&settings.view.grid_style, "line\0dot", 2);
+			ImGui::TextUnformatted("Grid Width");
+			ImGui::SliderFloat("##SliderGridWidth", &settings.view.grid_width, 1, 4, "%.1f");
+			ImGui::TextUnformatted("Grid Color");
+			ImGui::ColorEdit4("##ColorEditGridcolor", &settings.view.grid_color);
+			ImGui::Checkbox("ShowAxis", &settings.view.grid_axis);
+			ImGui::BeginDisabled(!settings.view.grid_axis);
+			ImGui::TextUnformatted("Axis Width");
+			ImGui::SliderFloat("##SliderFloatAxisWidth", &settings.view.grid_axis_width, 1, 4, "%.1f");
+			ImGui::TextUnformatted("Axis Color");
+			ImGui::ColorEdit4("##ColorEditAxiscolor", &settings.view.grid_axis_color);
+			ImGui::EndDisabled();
+		} else if (curr_setting_menu == 3) {
+		} else if (curr_setting_menu == 4) {
+		} else if (curr_setting_menu == 5) {
+		} else if (curr_setting_menu == 6) {
+		}
+
+		ImGui::EndChild();
+
+		ImGui::SetCursorPos(client_size - buttons_size - WINDOW_PADDING);
+		if (DialogButton("OK")) {
+			result = "OK";
+			window.setVisible(false);
+		}
+		ImGui::SameLine();
+		if (DialogButton("Cancel")) {
+			result = "Cancel";
+			window.setVisible(false);
+		}
+
+		Dialog::endDialogWindow();
+		Dialog::renderDialog();
+	});
+
+	Dialog::endShowDialog();
+
+	if (result != "OK") {
+		main_window.settings.curr_settings_menu = curr_setting_menu;
+		return;
+	} else {
+		main_window.settings = settings;
+		main_window.settings.curr_settings_menu = curr_setting_menu;
+	}
+
+	// update settings
+	// general
+	
+	// rendering
+	main_window.window.enableVSync(settings.rendering.enable_vsync);
+	if (settings.rendering.frame_limit)
+		main_window.setFrameLimit(settings.rendering.max_fps);
+	else	
+		main_window.setFrameLimit(0);
+
+	// grid
+	for (auto& ws : main_window.window_sheets)
+		ws->update_grid = true;
+}
+
 ProjectSaveDialog::ProjectSaveDialog() :
-	Dialog("", true),
+	Dialog(true),
 	save_as(false)
 {}
 
 std::string ProjectSaveDialog::showDialog()
 {
-	Dialog::switchContext();
-	
 	std::string result = "Close";
+	
+	Dialog::switchContext();
 
 	std::string project_location;
 	bool        create_subdirectory = true;
@@ -253,7 +434,6 @@ std::string ProjectSaveDialog::showDialog()
 	project_location    = GetSystemFolderPath(SystemFolders::Desktop);
 	project_name        = get_untitled_name(project_location);
 
-	window.setTitle(title.c_str());
 	titlebar.setButtonStyle(false, false, true);
 	Dialog::beginShowDialog(ImVec2(1000, 280));
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vk2d/system/window.h>
-#include <vk2d/graphics/texture_view.h>
 #include "gui/dialog.h"
 
 class MessageBox : public Dialog {
@@ -25,6 +23,13 @@ public:
 	std::vector<std::string> list;
 	std::string              buttons; // separated by ;
 	vk2d::TextureView        icon;
+};
+
+class SettingsDialog : public Dialog {
+public:
+	SettingsDialog();
+
+	void showDialog();
 };
 
 class ProjectSaveDialog : public Dialog {

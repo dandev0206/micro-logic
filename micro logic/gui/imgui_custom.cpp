@@ -202,4 +202,12 @@ bool ColorEdit4(const char* label, vk2d::Color* col, int flags)
 	return false;
 }
 
+void MakeTabVisible(const char* window_name)
+{
+	ImGuiWindow* window = ImGui::FindWindowByName(window_name);
+	if (window == NULL || window->DockNode == NULL || window->DockNode->TabBar == NULL)
+		return;
+	window->DockNode->TabBar->NextSelectedTabId = window->TabId;
+}
+
 }

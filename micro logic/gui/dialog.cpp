@@ -105,10 +105,14 @@ void Dialog::destroyImpl()
 }
 
 Dialog::Dialog(bool resizable) :
-	Dialog("", resizable)
+	Dialog({}, {}, resizable)
 {}
 
 Dialog::Dialog(const std::string& title, bool resizable) :
+	Dialog({}, title, resizable)
+{}
+
+Dialog::Dialog(const vk2d::TextureView& title_icon, const std::string& title, bool resizable) :
 	title(title),
 	owner(nullptr),
 	impl(get_dialog_impl(this)),
@@ -118,6 +122,7 @@ Dialog::Dialog(const std::string& title, bool resizable) :
 	client_size(),
 	title_height(impl->ctx->FontSize + 20)
 {
+	titlebar.setIcon(title_icon);
 	window.setResizable(resizable);
 }
 
@@ -138,6 +143,7 @@ void Dialog::beginShowDialog(ImVec2 size) const
 	client_size = size;
 	window_size = ImVec2(size.x, size.y + title_height);
 	
+	titlebar.setTitle(title);
 	titlebar.setCaptionRect({ 0.f, 0.f, size.x, title_height });
 	
 	window.setSize(to_uvec2(window_size));
@@ -193,10 +199,8 @@ bool Dialog::updateDialog() const
 
 	ImGui::VK2D::Update(window, getDeltaTime());
 
-	if (titlebar.beginTitleBar()) {
-		ImGui::TextUnformatted(title.c_str());
+	if (titlebar.beginTitleBar())
 		titlebar.endTitleBar();
-	}
 	
 	return true;
 }

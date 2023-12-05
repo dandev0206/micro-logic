@@ -19,7 +19,6 @@ protected:
 	void endDockWindow();
 
 public:
-	const char* window_name;
 	ImGuiID     id;
 
 	Rect window_rect;
@@ -33,4 +32,7 @@ public:
 	bool focussed;
 	bool show;
 	bool visible;
+
+private:
+	const char* window_name;
 };
