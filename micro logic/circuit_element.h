@@ -6,10 +6,32 @@
 #include <vk2d/graphics/image.h>
 #include <vk2d/graphics/draw_list.h>
 #include <memory>
+#include "net.h"
 
 #include "serialize.h"
 
 #define DEFAULT_GRID_SIZE (30.f)
+
+struct PinLayout {
+	enum IO : uint16_t {
+		Input,
+		Output,
+		VCC,
+		VDD = VCC,
+		GND
+	};
+
+	vec2     pos;
+	IO       io;
+	uint16_t pinout;
+};
+
+class Pin {
+public:
+	Pin();
+
+	Net*  net;
+};
 
 class CircuitElement : public Serialrizable {
 public:
@@ -51,6 +73,8 @@ public:
 	virtual void clearHover() = 0;
 	virtual Type getType() const = 0;
 
+	virtual Pin* getPin(const vec2& pos) { return nullptr; }
+
 	bool isSelected() const;
 	bool isWireBased() const;
 
@@ -62,9 +86,6 @@ class RigidElement abstract : public CircuitElement {
 public:
 	RigidElement();
 
-	AABB getAABB() const override;
-	bool hit(const AABB& aabb) const override;
-	bool hit(const vec2& pos) const override;
 	void transform(const vec2& delta, const vec2& origin, Direction rotation) override;
 
 	uint32_t getSelectFlagsMask() const;
@@ -75,7 +96,19 @@ public:
 	void setHover(uint32_t flags = UINT_MAX) override;
 	void clearHover() override;
 
+	vec2      pos;
+	Direction dir;
+};
 
+class LogicElement : public RigidElement {
+public:
+	AABB getAABB() const override;
+	bool hit(const AABB& aabb) const override;
+	bool hit(const vec2& pos) const override;
+
+	Pin* getPin(const vec2& pos) override;
+
+public:
 	struct Shared {
 		std::string name;
 		std::string description;
@@ -87,24 +120,16 @@ public:
 		uvec2       texture_extent;
 		Rect        extent;
 		vk2d::Image image_mask;
+
+		std::vector<PinLayout> pin_layouts;
 	};
 
 	std::shared_ptr<Shared> shared;
 
-	vec2      pos;
-	Direction path;
+	std::vector<Pin> pins;
 };
 
-class LogicGate : public RigidElement {
-public:
-	void serialize(std::ostream& os) const override;
-
-	std::unique_ptr<CircuitElement> clone(int32_t new_id = -1) const override;
-	void draw(vk2d::DrawList& draw_list) const override;
-	Type getType() const override;
-};
-
-class LogicUnit : public RigidElement {
+class LogicGate : public LogicElement {
 public:
 	void serialize(std::ostream& os) const override;
 
@@ -112,6 +137,18 @@ public:
 	void draw(vk2d::DrawList& draw_list) const override;
 	Type getType() const override;
 
+public:
+};
+
+class LogicUnit : public LogicElement {
+public:
+	void serialize(std::ostream& os) const override;
+
+	std::unique_ptr<CircuitElement> clone(int32_t new_id = -1) const override;
+	void draw(vk2d::DrawList& draw_list) const override;
+	Type getType() const override;
+
+public:
 };
 
 class WireElement abstract : public CircuitElement {

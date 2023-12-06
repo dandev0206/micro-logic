@@ -157,6 +157,7 @@
     <ClCompile Include="gui\resizing_loop.cpp" />
     <ClCompile Include="schematic_sheet.cpp" />
     <ClInclude Include="gui\platform\system_folder.h" />
+    <ClInclude Include="net.h" />
     <ClInclude Include="util\convert_string.h" />
     <ClCompile Include="window\window_explorer.cpp" />
     <ClInclude Include="dialogs.h" />
@@ -168,7 +169,6 @@
     <ClInclude Include="window\window_explorer.h" />
     <ClCompile Include="window\window_history.cpp" />
     <ClCompile Include="window\window_library.cpp" />
-    <ClCompile Include="window\window_settings.cpp" />
     <ClCompile Include="window\window_sheet.cpp" />
     <ClCompile Include="side_menus.cpp" />
   </ItemGroup>
@@ -193,7 +193,6 @@
     <ClInclude Include="icons.h" />
     <ClInclude Include="gui\platform\platform_impl.h" />
     <ClInclude Include="gui\imgui_custom.h" />
-    <ClInclude Include="window\window_settings.h" />
     <ClInclude Include="window\window_sheet.h" />
     <ClInclude Include="side_menus.h" />
     <ClInclude Include="utils\stack_proxy.hpp" />

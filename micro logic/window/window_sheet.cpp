@@ -173,6 +173,11 @@ void Window_Sheet::sheetSaved()
 	}
 }
 
+void Window_Sheet::SheetRenamed()
+{
+	window_name = sheet->name + "###" + sheet->guid;
+}
+
 void Window_Sheet::bindSchematicSheet(SchematicSheet& sheet)
 {
 	auto& main_window = MainWindow::get();

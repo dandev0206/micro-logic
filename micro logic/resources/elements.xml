@@ -1,11 +1,20 @@
 <CircuitElements grid_pixel_size="30">
-	<LogicGate name="7448">
+	<LogicGate name="7400">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="-1, -1"></Pin>
-			<Pin type="" io="output" pinout="0" pos="1, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="0, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="input" pinout="1" pos="-3, 1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="-2, 1"></Pin>
+			<Pin type="" io="output" pinout="3" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="4" pos="0, 1"></Pin>
+			<Pin type="" io="input" pinout="5" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="6" pos="2, 1"></Pin>
+			<Pin type="" io="GND" pinout="7" pos="3, 1"></Pin>
+			<Pin type="" io="output" pinout="8" pos="3, -1"></Pin>
+			<Pin type="" io="input" pinout="9" pos="2, -1"></Pin>
+			<Pin type="" io="input" pinout="10" pos="1, -1"></Pin>
+			<Pin type="" io="output" pinout="11" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="12" pos="-1, -1"></Pin>
+			<Pin type="" io="input" pinout="13" pos="-2, -1"></Pin>
+			<Pin type="" io="VCC" pinout="14" pos="-3, -1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -26,16 +35,16 @@
 			<Rect size="17, 23" pos="60, 30" origin="8, 15" col="195, 195, 195"></Rect>
 			<Rect size="17, 23" pos="90, 30" origin="8, 15" col="195, 195, 195"></Rect>
 			<Rect size="203, 50" pos="0, 0" origin="102, 25" col="55, 55, 55"></Rect>
-			<Text size="30" pos="0, 0" align="0.5, 0.5">7448</Text>
+			<Text size="30" pos="0, 0" align="0.5, 0.5">7400</Text>
 		</Appearance>
 	</LogicGate>
 	<LogicGate name="Full Adder">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="-1, -1"></Pin>
-			<Pin type="" io="output" pinout="0" pos="1, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="0, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="-1, -1"></Pin>
+			<Pin type="" io="output" pinout="2" pos="1, -1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="4" pos="0, 1"></Pin>
+			<Pin type="" io="input" pinout="5" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -52,9 +61,9 @@
 	</LogicGate>
 	<LogicGate name="minimal 2-input AND">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="0.5, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="0, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="0.5, -1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="0, 1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -69,9 +78,9 @@
 	</LogicGate>
 	<LogicGate name="2-input AND">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -86,9 +95,9 @@
 	</LogicGate>
 	<LogicGate name="2-input OR">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -103,9 +112,9 @@
 	</LogicGate>
 	<LogicGate name="2-input NAND">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -120,9 +129,9 @@
 	</LogicGate>
 	<LogicGate name="2-input NOR">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -137,9 +146,9 @@
 	</LogicGate>
 	<LogicGate name="2-input XOR">
 		<Pins>
-			<Pin type="" io="output" pinout="0" pos="0, -1"></Pin>
-			<Pin type="" io="input" pinout="1" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="1, 1"></Pin>
+			<Pin type="" io="output" pinout="1" pos="0, -1"></Pin>
+			<Pin type="" io="input" pinout="2" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1

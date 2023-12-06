@@ -7,7 +7,6 @@
 #include <chrono>
 #include "gui/custom_titlebar.h"
 #include "gui/resizing_loop.h"
-#include "window/window_settings.h"
 #include "window/window_sheet.h"
 #include "window/window_library.h"
 #include "window/window_history.h"
@@ -56,6 +55,7 @@ public:
 	void setCurrentSideMenu(SideMenu* menu);
 
 	bool addSchematicSheet();
+	bool renameSchematicSheet(SchematicSheet& sheet, const std::string& path);
 	bool saveSchematicSheet(SchematicSheet& sheet);
 	bool importSchematicSheet();
 	bool exportSchematicSheet(const SchematicSheet& sheet);

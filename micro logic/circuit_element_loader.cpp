@@ -27,12 +27,22 @@ static vk2d::Color parse_color(const tinyxml2::XMLElement* element, const char* 
 	return color;
 }
 
-void CircuitElementLoader::load(const char* path, const vk2d::Font& font)
+static std::string to_lower(const char* c_str) {
+	std::string result;
+
+	result.reserve(strlen(c_str) + 1);
+	while (*c_str) 
+		result += std::tolower(*(c_str)++);
+
+	return result;
+}
+
+void CircuitElementLoader::load(const char* dir, const vk2d::Font& font)
 {
 	this->font = &font;
 
 	tinyxml2::XMLDocument doc;
-	doc.LoadFile(path);
+	doc.LoadFile(dir);
 
 	loadExtents(doc.RootElement());
 	calculatePacking();
@@ -164,6 +174,31 @@ void CircuitElementLoader::renderTexture(tinyxml2::XMLElement* drawings, uint64_
 	}
 }
 
+void CircuitElementLoader::getPinLayouts(tinyxml2::XMLElement* elem, std::vector<PinLayout>& pin_layouts)
+{
+	elem = elem->FirstChildElement("Pins")->FirstChildElement("Pin");
+
+	for (; elem; elem = elem->NextSiblingElement("Pin")) {
+		auto& layout = pin_layouts.emplace_back();
+
+		auto io = to_lower(elem->Attribute("io"));
+		if (io == "input")
+			layout.io = PinLayout::Input;
+		else if (io == "output")
+			layout.io = PinLayout::Output;
+		else if (io == "vcc" || io == "vdd")
+			layout.io = PinLayout::VCC;
+		else if (io == "gnd")
+			layout.io = PinLayout::GND;
+		else {
+			// TODO: show error dialog
+		}
+
+		layout.pinout = atoi(elem->Attribute("pinout"));
+		layout.pos    = parse_vec2(elem, "pos");
+	}
+}
+
 LogicGate CircuitElementLoader::makeLogicGate(tinyxml2::XMLElement* elem, uint64_t id)
 {
 	LogicGate logic_gate;
@@ -182,9 +217,12 @@ LogicGate CircuitElementLoader::makeLogicGate(tinyxml2::XMLElement* elem, uint64
 	shared->extent         = extents[id];
 	shared->image_mask     = draw_data.image_mask.blit(shared->texture_coord);
 
+	getPinLayouts(elem, shared->pin_layouts);
+
 	logic_gate.shared = shared;
 	logic_gate.pos    = {};
-	logic_gate.path    = Direction::Up;
+	logic_gate.dir    = Direction::Up;
+	logic_gate.pins.resize(shared->pin_layouts.size(), {});
 
 	return logic_gate;
 }
@@ -203,7 +241,7 @@ LogicUnit CircuitElementLoader::makeLogicUnit(tinyxml2::XMLElement* elem, uint64
 
 	logic_unit.shared = shared;
 	logic_unit.pos    = {};
-	logic_unit.path    = Direction::Up;
+	logic_unit.dir    = Direction::Up;
 
 	return logic_unit;
 }

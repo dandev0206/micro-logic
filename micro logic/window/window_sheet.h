@@ -29,6 +29,7 @@ public:
 
 	bool isCommandInSavedRange(int64_t cmd_idx) const;
 	void sheetSaved();
+	void SheetRenamed();
 
 	void bindSchematicSheet(SchematicSheet& sheet);
 

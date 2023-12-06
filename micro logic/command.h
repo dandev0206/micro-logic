@@ -75,7 +75,7 @@ public:
 
 	vec2      delta;
 	vec2      origin;
-	Direction path;
+	Direction dir;
 
 private:
 	size_t item_count;
@@ -90,7 +90,7 @@ public:
 
 	vec2      delta;
 	vec2      origin;
-	Direction path;
+	Direction dir;
 
 private:
 	size_t item_count;
@@ -105,7 +105,7 @@ public:
 
 	vec2      delta;
 	vec2      origin;
-	Direction path;
+	Direction dir;
 
 private:
 	size_t item_count;

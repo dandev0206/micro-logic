@@ -268,11 +268,11 @@ void MainWindow::eventProc(const vk2d::Event& e)
 		switch (e.keyboard.key) {
 		case Key::X:
 			if (ctrl && !shft && !alt && curr_window_sheet)
-				curr_window_sheet->copySelectedToClipboard();
+				curr_window_sheet->cutSelectedToClipboard();
 			break;
 		case Key::C:
 			if (ctrl && !shft && !alt && curr_window_sheet)
-				curr_window_sheet->cutSelectedToClipboard();
+				curr_window_sheet->copySelectedToClipboard();
 			break;
 		case Key::V:
 			if (ctrl && !shft && !alt && curr_window_sheet)
@@ -479,7 +479,7 @@ bool MainWindow::saveProject()
 		elem->SetText(encoded.c_str());
 	}
 	
-	auto res = doc.SaveFile((project_dir + "\\" + project_name + PROJECT_EXT).c_str());
+	auto res = doc.SaveFile((project_dir + '/' + project_name + PROJECT_EXT).c_str());
 
 	if (res != tinyxml2::XMLError::XML_SUCCESS) {
 		MessageBox msg_box;
@@ -543,7 +543,7 @@ bool MainWindow::openProjectImpl(const std::string& project_path)
 		auto* elem = root->FirstChildElement("SchematicSheet");
 		for (; elem; elem = elem->NextSiblingElement("SchematicSheet")) {
 			std::string file_path = elem->Attribute("path");
-			std::string full_path = new_project_dir + "\\" + file_path;	
+			std::string full_path = new_project_dir + '/' + file_path;
 
 			SchematicSheetPtr_t sheet;
 			if (!openSchematicSheetImpl(sheet, full_path)) return false;
@@ -674,6 +674,32 @@ bool MainWindow::addSchematicSheet()
 	return true;
 }
 
+bool MainWindow::renameSchematicSheet(SchematicSheet& sheet, const std::string& path)
+{
+	if (sheet.path == path) return false;
+
+	if (sheet.file_saved) {
+		std::error_code err;
+		fs::rename(project_dir + '/' + sheet.path, project_dir + '/' + path, err);
+
+		if (err) {
+
+			return false;
+		}
+
+		if (!saveProject())
+			return false;
+	}
+
+	sheet.name = fs::path(path).filename().replace_extension().generic_string();
+	sheet.path = path;
+
+	if (auto* ws = findWindowSheet(sheet))
+		ws->SheetRenamed();
+
+	return true;
+}
+
 bool MainWindow::saveSchematicSheet(SchematicSheet& sheet)
 {
 	if (!isProjectOpened())
@@ -687,7 +713,7 @@ bool MainWindow::saveSchematicSheet(SchematicSheet& sheet)
 		}
 	}
 
-	if (!saveSchematicSheetImpl(sheet, project_dir + "\\" + sheet.path)) return false;
+	if (!saveSchematicSheetImpl(sheet, project_dir + '/' + sheet.path)) return false;
 
 	sheet.file_saved    = true;
 	sheet.is_up_to_date = true;
@@ -795,7 +821,8 @@ bool MainWindow::openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::s
 
 	sheet = std::make_unique<SchematicSheet>();
 	sheet->unserialize(file);
-	sheet->path          = path;
+	sheet->name          = fs::path(path).filename().replace_extension().generic_string();
+	sheet->path          = fs::relative(path, project_dir).generic_string();
 	sheet->file_saved    = true;
 	sheet->is_up_to_date = true;
 	updateThumbnail(*sheet);
@@ -1181,18 +1208,27 @@ void MainWindow::showMainMenus()
 			ImGui::Image(ICON_LIBRARY, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("Library")) {
-				window_library.show = true;
+				if (window_library.show)
+					ImGui::MakeTabVisible("Library");
+				else
+					window_library.show = true;
 			}
 
 			ImGui::Image(ICON_HISTORY, icon_size);
 			ImGui::SameLine();
 			if (ImGui::MenuItem("History")) {
-				window_history.show = true;
+				if (window_history.show)
+					ImGui::MakeTabVisible("History");
+				else
+					window_history.show = true;
 			}
 
 			ImGui::SetCursorPosX(spacing);
-			if (ImGui::MenuItem("Browse")) {
-				window_explorer.show = true;
+			if (ImGui::MenuItem("Explorer")) {
+				if (window_explorer.show)
+					ImGui::MakeTabVisible("Explorer");
+				else
+					window_explorer.show = true;
 			}
 
 			ImGui::Separator();

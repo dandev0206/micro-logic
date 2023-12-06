@@ -45,6 +45,23 @@ void SideMenu::menuButtonImpl(const vk2d::Texture& texture, const vk2d::Rect& re
 	}
 }
 
+void selectConnectedWire(const CircuitElement& elem, Command_Select& cmd)
+{
+	switch (elem.getType()) {
+	case CircuitElement::LogicGate:
+	case CircuitElement::LogicUnit:
+		const auto& logic_elem = static_cast<const LogicElement&>(elem);
+
+		for (const auto& layout : logic_elem.shared->pin_layouts) {
+			auto& ws = getCurrentWindowSheet();
+
+			// if (logic_elem.pins[layout.pinout - 1].net != nullptr) {
+			// 
+			// } TODO: uncomment later
+		}
+	}
+}
+
 Menu_Info::Menu_Info() :
 	SideMenu("Info")
 {}
@@ -142,7 +159,7 @@ SelectingSideMenu::SelectingSideMenu(const char* menu_name) :
 	blocked(false),
 	start_pos(),
 	last_pos(),
-	path(Direction::Up),
+	dir(Direction::Up),
 	last_dir(Direction::Up)
 {}
 
@@ -158,7 +175,7 @@ void SelectingSideMenu::loop()
 	ws.clearHoverList();
 
 	auto drag_rect = ws.getDragRect(Mouse::Left);
-	if (glm::length(drag_rect.getSize()) > DRAG_THRESHOLD) {
+	if (length(drag_rect.getSize()) > DRAG_THRESHOLD) {
 		AABB aabb = ws.toPlane(drag_rect);
 
 		ws.showDragRect(Mouse::Left);
@@ -185,26 +202,26 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 
 	switch (e.type) {
 	case Event::KeyPressed: {
-		auto tmp = (int)path;
+		auto tmp = (int)dir;
 		switch (e.keyboard.key) {
 		case Key::Up:
-			path = Direction::Up;
+			dir = Direction::Up;
 			break;
 		case Key::Right:
-			path = Direction::Right;
+			dir = Direction::Right;
 			break;
 		case Key::Down:
-			path = Direction::Down;
+			dir = Direction::Down;
 			break;
 		case Key::Left:
-			path = Direction::Left;
+			dir = Direction::Left;
 			break;
 		case Key::Delete:
 			deleteSelectedElement();
 			is_working = false;
 			break;
 		};
-		last_dir = rotate_dir(path, (Direction)tmp);
+		last_dir = rotate_dir(dir, (Direction)tmp);
 	} break;
 	case Event::MousePressed: {
 		if (!ws.capturing_mouse) break;
@@ -227,7 +244,7 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 				}
 			}
 		} else if (e.mouseButton.button == Mouse::Right) {
-			path      = rotate_cw(path);
+			dir      = rotate_cw(dir);
 			last_dir = Direction::Right;
 		}
 	} break;
@@ -237,7 +254,7 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 		
 		auto drag_rect = ws.getDragRect(Mouse::Left);
 
-		if (glm::length(drag_rect.getSize()) > DRAG_THRESHOLD) {
+		if (length(drag_rect.getSize()) > DRAG_THRESHOLD) {
 			selectElement((AABB)ws.toPlane(drag_rect));
 		}
 	} break;
@@ -249,7 +266,7 @@ void SelectingSideMenu::upperMenu()
 	if (is_working && last_dir == Direction::Up) {
 		auto& main_window = MainWindow::get();
 
-		int tmp = (int)path;
+		int tmp = (int)dir;
 		ImGui::SameLine();
 		ImGui::RadioImageButton(ICON_DIR_UP, { 35, 35 }, &tmp, 0);
 		ImGui::SameLine();
@@ -259,8 +276,8 @@ void SelectingSideMenu::upperMenu()
 		ImGui::SameLine();
 		ImGui::RadioImageButton(ICON_DIR_LEFT, { 35, 35 }, &tmp, 3);
 
-		last_dir = (Direction)(((int)tmp - (int)path + 4) % 4);
-		path      = (Direction)tmp;
+		last_dir = (Direction)(((int)tmp - (int)dir + 4) % 4);
+		dir      = (Direction)tmp;
 	}
 }
 
@@ -271,7 +288,7 @@ void SelectingSideMenu::beginWork()
 	is_working = true;
 	start_pos  = ws.getClampedCursorPlanePos();
 	last_pos   = start_pos;
-	path        = Direction::Up;
+	dir        = Direction::Up;
 	last_dir   = Direction::Up;
 }
 
@@ -319,8 +336,12 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
 
 			auto flags = elem.getSelectFlags(aabb);
-			if (flags) cmd0->selections.emplace_back(elem.id, flags);
-			
+
+			if (!flags) BVH_CONTINUE;
+
+			cmd0->selections.emplace_back(elem.id, flags);
+			selectConnectedWire(elem, *cmd0);
+
 			BVH_CONTINUE;
 		});
 
@@ -411,7 +432,7 @@ void Menu_Select::onClose()
 		if (!elem.isWireBased())
 			elem.style &= ~CircuitElement::Blocked;
 
-		elem.transform({}, last_pos, invert_dir(path));
+		elem.transform({}, last_pos, invert_dir(dir));
 		elem.transform(start_pos - last_pos, {}, Direction::Up);
 	}
 
@@ -429,12 +450,12 @@ void Menu_Select::endWork()
 
 	auto delta = last_pos - start_pos;
 
-	if (delta != vec2(0.f) || path != Direction::Up) {
+	if (delta != vec2(0.f) || dir != Direction::Up) {
 		auto cmd = std::make_unique<Command_Move>();
 
 		cmd->delta  = delta;
 		cmd->origin = last_pos;
-		cmd->path    = path;
+		cmd->dir    = dir;
 
 		for (auto iter : ws.sheet->selections)
 			ws.getBVH().update_element(iter, iter->second->getAABB());
@@ -493,7 +514,7 @@ void Menu_Library::loop()
 		auto& gate    = main_window.logic_gates[curr_gate];
 
 		gate.pos = pos;
-		gate.path = curr_dir;
+		gate.dir = curr_dir;
 
 		auto overlap = bvh.query(gate.getAABB(), [&](auto iter) {
 			return iter->second->getType() != CircuitElement::Wire;
@@ -679,12 +700,12 @@ void Menu_Copy::endWork()
 	} else {
 		auto delta = last_pos - start_pos;
 
-		if (delta != vec2(0.f) || path != Direction::Up) {
+		if (delta != vec2(0.f) || dir != Direction::Up) {
 			auto cmd = std::make_unique<Command_Copy>();
 
 			cmd->delta  = delta;
 			cmd->origin = last_pos;
-			cmd->path    = path;
+			cmd->dir    = dir;
 
 			ws.pushCommand(std::move(cmd));
 		}
@@ -858,7 +879,7 @@ void Menu_Cut::endWork()
 
 		cmd->delta  = last_pos - start_pos;
 		cmd->origin = last_pos;
-		cmd->path    = path;
+		cmd->dir    = dir;
 
 		ws.pushCommand(std::move(cmd));
 	}
@@ -959,7 +980,7 @@ void Menu_Delete::loop()
 	auto& ws       = getCurrentWindowSheet();
 	auto drag_rect = ws.getDragRect(Mouse::Left);
 
-	if (glm::length(drag_rect.getSize()) > DRAG_THRESHOLD) {
+	if (length(drag_rect.getSize()) > DRAG_THRESHOLD) {
 		AABB aabb = ws.toPlane(drag_rect);
 
 		ws.showDragRect(Mouse::Left);
@@ -996,7 +1017,7 @@ void Menu_Delete::eventProc(const vk2d::Event& e, float dt)
 
 		auto drag_rect = ws.getDragRect(Mouse::Left);
 
-		if (glm::length(drag_rect.getSize()) > DRAG_THRESHOLD) {
+		if (length(drag_rect.getSize()) > DRAG_THRESHOLD) {
 			ws.clearHoverList();
 			
 			AABB aabb = ws.toPlane(drag_rect);
@@ -1065,6 +1086,11 @@ bool WiringSideMenu::checkContinueWiring(const vec2& pos) const
 		switch (elem->getType()) {
 		case CircuitElement::Wire:
 			BVH_BREAK;
+		case CircuitElement::LogicGate:
+		case CircuitElement::LogicUnit:
+			if (auto* pin = elem->getPin(pos))
+				BVH_BREAK;
+			break;
 		}
 
 		BVH_CONTINUE;
@@ -1121,14 +1147,14 @@ void Menu_Wire::eventProc(const vk2d::Event& e, float dt)
 
 				std::vector<Wire> wires;
 				if (curr_wire_type == 2 || is_vert || is_horiz) {
-					if (glm::length(start_pos - pos) > 0.f)
+					if (length(start_pos - pos) > 0.f)
 						wires.emplace_back(start_pos, pos);
 				} else {
 					auto mid = getMiddle(start_pos, pos);
 
-					if (glm::length(start_pos - mid) > 0.f)
+					if (length(start_pos - mid) > 0.f)
 						wires.emplace_back(start_pos, mid);
-					if (glm::length(mid - pos) > 0.f)
+					if (length(mid - pos) > 0.f)
 						wires.emplace_back(mid, pos);
 				}
 
@@ -1198,6 +1224,7 @@ void Menu_Wire::addWires(std::vector<Wire>&& stack)
 					stack.emplace_back(wire.p0, lerp(wire.p0, wire.p1, t0));
 					stack.emplace_back(lerp(wire.p0, wire.p1, t1), wire.p1);
 				}
+				BVH_BREAK;
 			}
 
 			BVH_CONTINUE;

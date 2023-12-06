@@ -54,9 +54,6 @@
     <ClCompile Include="schematic_sheet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="window\window_settings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="command.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -137,9 +134,6 @@
     <ClInclude Include="schematic_sheet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="window\window_settings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="command.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -183,6 +177,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="gui\platform\system_folder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="net.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

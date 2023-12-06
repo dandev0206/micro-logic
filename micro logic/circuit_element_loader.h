@@ -12,13 +12,14 @@ class XMLElement;
 
 class CircuitElementLoader {
 public:
-	void load(const char* path, const vk2d::Font& font);
+	void load(const char* dir, const vk2d::Font& font);
 
 private:
 	void loadExtents(tinyxml2::XMLElement* root);
 	void calculatePacking();
 	void loadElements(tinyxml2::XMLElement* root);
 	void renderTexture(tinyxml2::XMLElement* drawings, uint64_t id);
+	void getPinLayouts(tinyxml2::XMLElement* elem, std::vector<PinLayout>& pin_layouts);
 	LogicGate makeLogicGate(tinyxml2::XMLElement* elem, uint64_t id);
 	LogicUnit makeLogicUnit(tinyxml2::XMLElement* elem, uint64_t id);
 

@@ -4,8 +4,9 @@
 #include <imgui.h>
 #include "../main_window.h"
 #include "../gui/imgui_custom.h"
-#include "../micro_logic_config.h"
+#include "../dialogs.h"
 #include "../icons.h"
+#include "../micro_logic_config.h"
 
 Window_Explorer::Window_Explorer()
 {}
@@ -36,10 +37,20 @@ void Window_Explorer::showUI()
 			ImGui::SetCursorPosX((content_rect.width - child_width) / 2 + 5);
 			ImGui::BeginChild((ImGuiID)(i + 10), child_size, child_flags, window_flags);
 
-			if (sheet->is_up_to_date)
-				ImGui::Text("#%d - %s", i, sheet->name.c_str());
-			else
-				ImGui::Text("#%d - *%s", i, sheet->name.c_str());
+			ImGui::Text(sheet->is_up_to_date ? "#%d - " : "#%d - *", i);
+			ImGui::SameLine();
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 5);
+			if (ImGui::Button(sheet->name.c_str())) {
+				SchematicSheetNameDialog dialog;
+				dialog.owner      = &main_window.window;
+				dialog.title      = "Rename schematic sheet";
+				dialog.parent_dir = main_window.project_name;
+				dialog.sheet_path = sheet->path.substr(0, sheet->path.size() - 4);
+				dialog.buttons    = "Rename;Cancel";
+				
+				if (dialog.showDialog() == "Rename")
+					main_window.renameSchematicSheet(*sheet, dialog.sheet_path);
+			}
 
 			ImGui::SameLine();
 			ImGui::SetCursorPosX(child_width - 80);
@@ -58,9 +69,8 @@ void Window_Explorer::showUI()
 			if (ImGui::Selectable("##Selectable", false, ImGuiSelectableFlags_AllowDoubleClick, button_size)) {
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					main_window.openWindowSheet(*main_window.sheets[i]);
-				else if (auto* ws = main_window.findWindowSheet(*sheet)) {
+				else if (auto* ws = main_window.findWindowSheet(*sheet))
 					ImGui::MakeTabVisible(ws->window_name.c_str());
-				}
 			}
 			ImGui::PopID();
 

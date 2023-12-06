@@ -1,9 +1,9 @@
 #include "command.h"
 
-static AABB transform_AABB(const AABB& aabb, const vec2& delta, const vec2& origin, Direction path) {
+static AABB transform_AABB(const AABB& aabb, const vec2& delta, const vec2& origin, Direction dir) {
 	AABB result;
-	result.min = rotate_vector(aabb.min + delta - origin, path) + origin;
-	result.max = rotate_vector(aabb.max + delta - origin, path) + origin;
+	result.min = rotate_vector(aabb.min + delta - origin, dir) + origin;
+	result.max = rotate_vector(aabb.max + delta - origin, dir) + origin;
 
 	if (result.min.x > result.max.x) std::swap(result.min.x, result.max.x);
 	if (result.min.y > result.max.y) std::swap(result.min.y, result.max.y);
@@ -269,7 +269,7 @@ void Command_Move::redo(SchematicSheet& sheet)
 	for (auto& selection : sheet.selections) {
 		auto& elem = static_cast<CircuitElement&>(*selection->second);
 
-		elem.transform(delta, origin, path);
+		elem.transform(delta, origin, dir);
 		sheet.bvh.update_element(selection, elem.getAABB());
 	}
 }
@@ -279,7 +279,7 @@ void Command_Move::undo(SchematicSheet& sheet)
 	for (auto& selection : sheet.selections) {
 		auto& elem = static_cast<CircuitElement&>(*selection->second);
 
-		elem.transform({}, origin, invert_dir(path));
+		elem.transform({}, origin, invert_dir(dir));
 		elem.transform(-delta, {}, Direction::Up);
 		sheet.bvh.update_element(selection, elem.getAABB());
 	}
@@ -303,7 +303,7 @@ void Command_Copy::redo(SchematicSheet& sheet)
 		auto new_elem = elem.clone(sheet.id_counter++);
 		
 		new_elem->select();
-		new_elem->transform(delta, origin, path);
+		new_elem->transform(delta, origin, dir);
 		new_elem->unselect();
 
 		sheet.bvh.insert(new_elem->getAABB(), std::move(new_elem));
@@ -319,7 +319,7 @@ void Command_Copy::undo(SchematicSheet& sheet)
 
 		auto aabb = elem.getAABB();
 
-		aabb = transform_AABB(aabb, delta, origin, path);
+		aabb = transform_AABB(aabb, delta, origin, dir);
 
 		auto result = sheet.bvh.query(aabb, [&](auto iter) {
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
@@ -353,7 +353,7 @@ void Command_Cut::redo(SchematicSheet& sheet)
 		auto& elem = static_cast<CircuitElement&>(*selection->second);
 
 		elem.select();
-		elem.transform(delta, origin, path);
+		elem.transform(delta, origin, dir);
 		elem.unselect();
 
 		sheet.bvh.update_element(selection, elem.getAABB());
@@ -366,7 +366,7 @@ void Command_Cut::undo(SchematicSheet& sheet)
 		auto& elem = static_cast<CircuitElement&>(*selection->second);
 
 		elem.select();
-		elem.transform({}, origin, invert_dir(path));
+		elem.transform({}, origin, invert_dir(dir));
 		elem.transform(-delta, {}, Direction::Up);
 		elem.unselect();
 
