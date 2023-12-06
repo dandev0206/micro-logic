@@ -8,13 +8,14 @@
 #include "../icons.h"
 #include "../micro_logic_config.h"
 
-Window_Explorer::Window_Explorer()
+Window_Explorer::Window_Explorer() :
+	delete_sheet(nullptr)
 {}
 
 void Window_Explorer::showUI()
 {
 	if (!show) return;
-
+	
 	DockingWindow::beginDockWindow("Project Explorer", &show);
 
 	if (visible) {
@@ -27,7 +28,10 @@ void Window_Explorer::showUI()
 		auto button_size = ImVec2(child_width - 20, (child_width - 20) * 0.75f);
 		auto child_size  = ImVec2(child_width, child_width * 0.75f + 35);
 
-		SchematicSheet* delete_sheet = nullptr;
+		if (delete_sheet) {
+			main_window.deleteSchematicSheet(*delete_sheet);
+			delete_sheet = nullptr;
+		}
 
 		for (size_t i = 0; i < main_window.sheets.size(); ++i) {
 			auto& sheet     = main_window.sheets[i];
@@ -42,11 +46,11 @@ void Window_Explorer::showUI()
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 5);
 			if (ImGui::Button(sheet->name.c_str())) {
 				SchematicSheetNameDialog dialog;
-				dialog.owner      = &main_window.window;
-				dialog.title      = "Rename schematic sheet";
-				dialog.parent_dir = main_window.project_name;
-				dialog.sheet_path = sheet->path.substr(0, sheet->path.size() - 4);
-				dialog.buttons    = "Rename;Cancel";
+				dialog.owner       = &main_window.window;
+				dialog.title       = "Rename schematic sheet";
+				dialog.project_dir = main_window.project_name;
+				dialog.sheet_path  =
+				dialog.buttons     = "Rename;Cancel";
 				
 				if (dialog.showDialog() == "Rename")
 					main_window.renameSchematicSheet(*sheet, dialog.sheet_path);
@@ -81,11 +85,6 @@ void Window_Explorer::showUI()
 		ImGui::SetCursorPosX(content_rect.width / 2 - 90);
 		if (ImGui::ImageButton(ICON_PLUS, vec2(180, 60)))
 			main_window.addSchematicSheet();
-
-		if (delete_sheet)
-			main_window.deleteSchematicSheet(*delete_sheet);
-
-		ImGui::TextUnformatted("");
 	}
 
 	DockingWindow::endDockWindow();

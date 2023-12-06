@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../custom_titlebar.h"
-#include "../resizing_loop.h"
+#include "../gui/custom_titlebar.h"
+#include "../gui/resizing_loop.h"
 
 void CreateNewProcess();
 void SleepMS(uint32_t milliseconds);

@@ -5,7 +5,7 @@
 #include "imgui_custom.h"
 #include "../vector_type.h"
 #include "../micro_logic_config.h"
-#include "platform/platform_impl.h"
+#include "../platform/platform_impl.h"
 
 #define ICON_MINIMIZE button_icons, { 20, 0, 160, 100 }
 #define ICON_MAXIMIZE button_icons, { 220, 0, 160, 100 }

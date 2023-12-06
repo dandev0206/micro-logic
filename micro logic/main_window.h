@@ -49,6 +49,9 @@ public:
 	bool isProjectOpened() const;
 	bool isProjectEmpty() const;
 
+	std::vector<std::string> loadRecent();
+	bool updateRecent(const std::string& project_path);
+
 	template <class Menu_T>
 	Menu_T* findSideMenu();
 	SideMenu& getCurrentSideMenu();
@@ -59,7 +62,7 @@ public:
 	bool saveSchematicSheet(SchematicSheet& sheet);
 	bool importSchematicSheet();
 	bool exportSchematicSheet(const SchematicSheet& sheet);
-	bool openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::string& path);
+	bool openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::string& project_dir, const std::string& path);
 	bool saveSchematicSheetImpl(const SchematicSheet& sheet, const std::string& path);
 	bool deleteSchematicSheet(SchematicSheet& sheet);
 	bool hasUnsavedSchematicSheet() const;
@@ -135,8 +138,9 @@ public:
 	timepoint_t info_message_last_time;
 
 public: // project
-	std::string project_dir;
 	std::string project_name;
+	std::string project_path;
+	std::string project_dir;
 
 	std::vector<SchematicSheetPtr_t> sheets;
 	std::vector<Window_SheetPtr_t>   window_sheets;
@@ -161,6 +165,8 @@ public:
 	bool want_close_window;
 
 	std::string new_project_path;
+
+	std::vector<std::string> recent_projects_cache;
 
 	bool initialized;
 };

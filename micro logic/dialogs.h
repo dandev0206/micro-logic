@@ -51,7 +51,7 @@ public:
 	std::string showDialog();
 
 	std::string content;
-	std::string parent_dir;
+	std::string project_dir;
 	std::string sheet_name;
 	std::string buttons; // separated by ;
 	

@@ -145,8 +145,6 @@
     <ClInclude Include="include\vk2d\graphics\drawable.h" />
     <ClInclude Include="include\vk2d\graphics\draw_list.h" />
     <ClInclude Include="include\vk2d\graphics\vertex_builder.h" />
-    <ClInclude Include="include\vk2d\system\dialog.h" />
-    <ClInclude Include="include\vk2d\system\file_dialog.h" />
     <ClInclude Include="include\vk2d\system\font.h" />
     <ClInclude Include="include\vk2d\graphics\render_texture.h" />
     <ClInclude Include="include\vk2d\system\clipboard.h" />
@@ -161,7 +159,6 @@
     <ClInclude Include="include\vk2d\graphics\render_target.h" />
     <ClInclude Include="include\vk2d\graphics\texture.h" />
     <ClInclude Include="include\vk2d\system\cursor.h" />
-    <ClInclude Include="include\vk2d\system\message_box.h" />
     <ClInclude Include="include\vk2d\vector_type.h" />
     <ClInclude Include="include\vk2d\graphics\vertex.hpp" />
     <ClInclude Include="include\vk2d\graphics\vertex_buffer.h" />
@@ -178,8 +175,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\draw_list.cpp" />
-    <ClCompile Include="src\platform\windows_file_dialog_impl.cpp" />
-    <ClCompile Include="src\platform\windows_message_box_impl.cpp" />
     <ClCompile Include="src\vertex_builder.cpp" />
     <ClCompile Include="src\buffer.cpp" />
     <ClInclude Include="include\vk2d\graphics\render_states.h" />

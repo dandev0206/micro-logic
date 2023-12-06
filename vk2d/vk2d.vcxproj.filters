@@ -114,15 +114,6 @@
     <ClInclude Include="include\vk2d\graphics\draw_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\system\file_dialog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vk2d\system\message_box.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\vk2d\system\dialog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\vk_instance.cpp">
@@ -180,12 +171,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\draw_list.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\platform\windows_file_dialog_impl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\platform\windows_message_box_impl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

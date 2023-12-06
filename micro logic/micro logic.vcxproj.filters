@@ -27,7 +27,7 @@
     <ClCompile Include="main_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gui\platform\platform_windows_impl.cpp">
+    <ClCompile Include="platform\platform_windows_impl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="gui\imgui_custom.cpp">
@@ -75,7 +75,7 @@
     <ClCompile Include="dialogs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gui\platform\system_folder.cpp">
+    <ClCompile Include="platform\system_dialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,7 +89,7 @@
     <ClInclude Include="main_window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui\platform\platform_impl.h">
+    <ClInclude Include="platform\platform_impl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="icons.h">
@@ -176,7 +176,7 @@
     <ClInclude Include="util\convert_string.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="gui\platform\system_folder.h">
+    <ClInclude Include="platform\system_dialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="net.h">

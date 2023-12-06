@@ -4,11 +4,10 @@
 
 #define ICON_TEXTURE_VAR MainWindow::get().textures[TEXTURE_ICONS_IDX]
 
-#include <vk2d/system/file_dialog.h>
 #include <imgui_internal.h>
 #include <imgui_stdlib.h>
 #include <filesystem>
-#include "gui/platform/system_folder.h"
+#include "platform/system_dialog.h"
 #include "gui/imgui_impl_vk2d.h"
 #include "gui/imgui_custom.h"
 #include "util/convert_string.h"
@@ -341,7 +340,7 @@ void SettingsDialog::showDialog()
 
 			ImGui::EndChild();
 
-			ImGui::SetCursorPosX(size.x - 400);
+			ImGui::SetCursorPosX(size.x - 390);
 			if (ImGui::ImageButton(ICON_MAG_MINUS, { 17, 17 })) preview_scale /= 1.05f;
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(200);
@@ -467,16 +466,14 @@ std::string ProjectSaveDialog::showDialog()
 			update_project_dir();
 		ImGui::SameLine();
 		if (ImGui::Button("...")) {
-			vk2d::FolderOpenDialog dialog;
+			FolderOpenDialog dialog;
 
-			auto default_dir  = to_wide(project_location);
-
-			dialog.title        = L"Choose project directory";
-			dialog.default_dir  = default_dir.c_str();
+			dialog.title        = "Choose project directory";
+			dialog.default_dir  = project_location;
 			dialog.owner        = &window;
 			
-			if (dialog.showDialog() == vk2d::DialogResult::OK)
-				project_location = to_unicode(dialog.getResultDir());
+			if (dialog.showDialog() == DialogResult::OK)
+				project_location = dialog.path;
 			
 			update_project_dir();
 		}
@@ -552,7 +549,7 @@ std::string SchematicSheetNameDialog::showDialog()
 
 	std::string result = "Error";
 
-	auto text_size    = ImGui::CalcTextSize(parent_dir.c_str());
+	auto text_size    = ImGui::CalcTextSize(project_dir.c_str());
 	auto ext_size     = ImGui::CalcTextSize(SCHEMATIC_SHEET_EXT);
 	auto button_names = split_str(buttons, ';');
 	auto buttons_size = calc_buttons_size(button_names);
@@ -573,7 +570,7 @@ std::string SchematicSheetNameDialog::showDialog()
 		Dialog::beginDialogWindow("ProjectClose", nullptr, window_flags);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(3, 10));
-		ImGui::Text("%s/", parent_dir.c_str());
+		ImGui::Text("%s/", project_dir.c_str());
 		ImGui::SameLine();
 		ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 3);
 		ImGui::SetNextItemWidth(330);

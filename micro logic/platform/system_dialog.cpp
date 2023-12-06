@@ -1,12 +1,29 @@
-#include "../../include/vk2d/system/file_dialog.h"
+#include "system_dialog.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#include <Windows.h>
-#include <shobjidl.h>
+#include <windows.h>
+#include <shlobj.h>
 #include <Shlwapi.h >
+#include "../util/convert_string.h"
 
-VK2D_BEGIN
+int32_t get_csidl(SystemFolders folder) {
+	switch (folder) {
+	case SystemFolders::Desktop:  return CSIDL_DESKTOP;
+	case SystemFolders::Document: return CSIDL_MYDOCUMENTS;
+	}
+}
+
+std::string GetSystemFolderPath(SystemFolders folder)
+{
+	wchar_t path[MAX_PATH + 1];
+	int32_t csidl = get_csidl(folder);
+
+	if (SUCCEEDED(SHGetFolderPath(NULL, csidl, NULL, 0, path)))
+		return to_unicode(path);
+	else
+		return "";
+}
 
 class COMGuard {
 public:
@@ -34,6 +51,7 @@ private:
 
 static HRESULT set_filter(IFileDialog* dialog, const FileDialogBase::filter_t& filters) {
 	std::vector<COMDLG_FILTERSPEC> filter_specs(filters.size() + 1);
+	std::vector<std::wstring> spec_names(filters.size() + 1);
 	std::vector<std::wstring> specs(filters.size() + 1);
 
 	if (!filters.empty()) {
@@ -41,14 +59,16 @@ static HRESULT set_filter(IFileDialog* dialog, const FileDialogBase::filter_t& f
 			auto& spec = specs[i];
 			
 			spec += L"*.";
-			for (const wchar_t* ch = filters[i].spec; *ch; ++ch) {
-				if (*ch == L',')
+			for (const char* ch = filters[i].spec; *ch; ++ch) {
+				if (*ch == ',')
 					spec += L";*.";
 				else
 					spec += *ch;
 			}
 
-			filter_specs[i].pszName = filters[i].name;
+			spec_names.emplace_back(to_wide(filters[i].name));
+
+			filter_specs[i].pszName = spec_names[i].c_str();
 			filter_specs[i].pszSpec = spec.c_str();
 		}
 	}
@@ -95,95 +115,26 @@ HRESULT add_options(IFileDialog* dialog, FILEOPENDIALOGOPTIONS new_options) {
 	return S_OK;
 }
 
-//class CDialogEventHandler : public IFileDialogEvents {
-//public:
-//	CDialogEventHandler() : 
-//		_cRef(1) {};
-//
-//	IFACEMETHODIMP OnFileOk(IFileDialog* dialog) {
-//		return S_OK;
-//	};
-//
-//	IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) {
-//		static const QITAB qit[] = {
-//			QITABENT(CDialogEventHandler, IFileDialogEvents),
-//			{ 0 },
-//		};
-//		return QISearch(this, qit, riid, ppv);
-//	}
-//
-//	IFACEMETHODIMP_(ULONG) AddRef() {
-//		return InterlockedIncrement(&_cRef);
-//	}
-//
-//	IFACEMETHODIMP_(ULONG) Release() {
-//		long cRef = InterlockedDecrement(&_cRef);
-//		if (!cRef)
-//			delete this;
-//		return cRef;
-//	}
-//
-//	IFACEMETHODIMP OnFolderChange(IFileDialog*) { return S_OK; }
-//	IFACEMETHODIMP OnFolderChanging(IFileDialog*, IShellItem*) { return S_OK; }
-//	IFACEMETHODIMP OnHelp(IFileDialog*) { return S_OK; }
-//	IFACEMETHODIMP OnSelectionChange(IFileDialog*) { return S_OK; }
-//	IFACEMETHODIMP OnShareViolation(IFileDialog*, IShellItem*, FDE_SHAREVIOLATION_RESPONSE*) { return S_OK; }
-//	IFACEMETHODIMP OnTypeChange(IFileDialog*) { return S_OK; }
-//	IFACEMETHODIMP OnOverwrite(IFileDialog*, IShellItem*, FDE_OVERWRITE_RESPONSE*) { return S_OK; }
-//
-//private:
-//	~CDialogEventHandler() ;
-//	long _cRef;
-//};
-//
-//HRESULT CDialogEventHandler_CreateInstance(REFIID riid, void** ppv)
-//{
-//	*ppv = NULL;
-//	CDialogEventHandler* pDialogEventHandler = new (std::nothrow) CDialogEventHandler();
-//	HRESULT hr = pDialogEventHandler ? S_OK : E_OUTOFMEMORY;
-//	if (SUCCEEDED(hr))
-//	{
-//		hr = pDialogEventHandler->QueryInterface(riid, ppv);
-//		pDialogEventHandler->Release();
-//	}
-//	return hr;
-//}
-
 FileDialogBase::filteritem_t::filteritem_t() :
 	name(nullptr),
 	spec(nullptr)
 {}
 
-FileDialogBase::filteritem_t::filteritem_t(const wchar_t* name, const wchar_t* spec) :
+FileDialogBase::filteritem_t::filteritem_t(const char* name, const char* spec) :
 	name(name),
 	spec(spec)
 {}
 
 FileDialogBase::FileDialogBase() :
-	owner(nullptr),
-	title(nullptr),
-	default_dir(nullptr),
-	default_name(nullptr),
-	filters() 
+	owner(nullptr)
 {}
 
 FolderOpenDialog::FolderOpenDialog() :
-	owner(nullptr),
-	title(nullptr),
-	default_dir(nullptr),
-	default_name(nullptr),
-	path(nullptr) 
+	owner(nullptr)
 {}
-
-FolderOpenDialog::~FolderOpenDialog()
-{
-	CoTaskMemFree(path);
-}
 
 DialogResult FolderOpenDialog::showDialog()
 {
-	CoTaskMemFree(std::exchange(path, nullptr));
-
 	COMGuard com_guard;
 	if (FAILED(com_guard.init(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 		return DialogResult::Error;
@@ -200,9 +151,9 @@ DialogResult FolderOpenDialog::showDialog()
 
 	ReleaseGuard dialog_guard(dialog);
 
-	if (FAILED(dialog->SetTitle(title))) return DialogResult::Error;
-	if (FAILED(set_default_dir(dialog, default_dir))) return DialogResult::Error;
-	if (FAILED(set_default_name(dialog, default_name))) return DialogResult::Error;
+	if (FAILED(dialog->SetTitle(to_wide(title).c_str()))) return DialogResult::Error;
+	if (FAILED(set_default_dir(dialog, to_wide(default_dir).c_str()))) return DialogResult::Error;
+	if (FAILED(set_default_name(dialog, to_wide(default_name).c_str()))) return DialogResult::Error;
 	if (FAILED(add_options(dialog, FOS_FORCEFILESYSTEM))) return DialogResult::Error;
 	if (FAILED(add_options(dialog, FOS_PICKFOLDERS))) return DialogResult::Error;
 
@@ -216,30 +167,22 @@ DialogResult FolderOpenDialog::showDialog()
 
 	ReleaseGuard item_guard(item);
 
-	if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) return DialogResult::Error;
+	wchar_t* path_wstr;
+	if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path_wstr))) return DialogResult::Error;
+	
+	path = to_unicode(path_wstr);
+	
+	CoTaskMemFree(path_wstr);
 
 	return DialogResult::OK;
-}
-
-const wchar_t* FolderOpenDialog::getResultDir() const
-{
-	return path;
 }
 
 FileOpenDialog::FileOpenDialog(bool multi_selectable) :
 	multi_selectable(multi_selectable) 
 {}
 
-FileOpenDialog::~FileOpenDialog()
-{
-	for (wchar_t* path : paths)
-		CoTaskMemFree(path);
-}
-
 DialogResult FileOpenDialog::showDialog()
 {
-	for (wchar_t* path : paths)
-		CoTaskMemFree(path);
 	paths.clear();
 
 	COMGuard com_guard;
@@ -258,9 +201,9 @@ DialogResult FileOpenDialog::showDialog()
 
 	ReleaseGuard dialog_guard(dialog);
 
-	if (FAILED(dialog->SetTitle(title))) return DialogResult::Error;
-	if (FAILED(set_default_dir(dialog, default_dir))) return DialogResult::Error;
-	if (FAILED(set_default_name(dialog, default_name))) return DialogResult::Error;
+	if (FAILED(dialog->SetTitle(to_wide(title).c_str()))) return DialogResult::Error;
+	if (FAILED(set_default_dir(dialog, to_wide(default_dir).c_str()))) return DialogResult::Error;
+	if (FAILED(set_default_name(dialog, to_wide(default_name).c_str()))) return DialogResult::Error;
 	if (FAILED(set_filter(dialog, filters))) return DialogResult::Error;
 	if (FAILED(add_options(dialog, FOS_FORCEFILESYSTEM))) return DialogResult::Error;
 	if (multi_selectable) 
@@ -278,58 +221,51 @@ DialogResult FileOpenDialog::showDialog()
 		if (FAILED(dialog->GetResults(&items))) return DialogResult::Error;
 		if (FAILED(items->GetCount(&item_count))) return DialogResult::Error;
 		
-		paths.resize(item_count, nullptr);
+		paths.reserve(item_count);
 		for (i = 0; i < item_count; ++i) {
 			IShellItem* item;
+			wchar_t*    path_wstr;
 
 			if (FAILED(items->GetItemAt(i, &item))) break;
 			ReleaseGuard item_guard(item);
 
-			if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &paths[i]))) break;
+			if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path_wstr))) break;
+			paths.emplace_back(to_unicode(path_wstr));
+			CoTaskMemFree(path_wstr);
 		}
 
 		if (i != item_count) {
-			while (i > 0) CoTaskMemFree(paths[--i]);
-
+			paths.clear();
 			return DialogResult::Error;
 		}
 
 		return DialogResult::OK;
 	} else {
 		IShellItem* item;
+		wchar_t*    path_wstr;
 
 		if (FAILED(dialog->GetResult(&item))) return DialogResult::Error;
 
 		ReleaseGuard item_guard(item);
 
-		paths.resize(1);
-		if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &paths[0]))) {
+		paths.reserve(1);
+		if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path_wstr))) {
 			paths.clear();
 			return DialogResult::Error;
 		}
+		paths.emplace_back(to_unicode(path_wstr));
+		CoTaskMemFree(path_wstr);
 		
 		return DialogResult::OK;
 	}
-}
-
-const std::vector<wchar_t*> FileOpenDialog::getResultPaths() const
-{
-	return paths;
 }
 
 FileSaveDialog::FileSaveDialog() :
 	path(nullptr) 
 {}
 
-FileSaveDialog::~FileSaveDialog()
-{
-	CoTaskMemFree(path);
-}
-
 DialogResult FileSaveDialog::showDialog()
 {
-	CoTaskMemFree(std::exchange(path, nullptr));
-
 	COMGuard com_guard;
 	if (FAILED(com_guard.init(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 		return DialogResult::Error;
@@ -346,9 +282,9 @@ DialogResult FileSaveDialog::showDialog()
 
 	ReleaseGuard dialog_guard(dialog);
 
-	if (FAILED(dialog->SetTitle(title))) return DialogResult::Error;
-	if (FAILED(set_default_dir(dialog, default_dir))) return DialogResult::Error;
-	if (FAILED(set_default_name(dialog, default_name))) return DialogResult::Error;
+	if (FAILED(dialog->SetTitle(to_wide(title).c_str()))) return DialogResult::Error;
+	if (FAILED(set_default_dir(dialog, to_wide(default_dir).c_str()))) return DialogResult::Error;
+	if (FAILED(set_default_name(dialog, to_wide(default_name).c_str()))) return DialogResult::Error;
 	if (FAILED(set_filter(dialog, filters))) return DialogResult::Error;
 	if (FAILED(add_options(dialog, FOS_FORCEFILESYSTEM))) return DialogResult::Error;
 
@@ -362,14 +298,10 @@ DialogResult FileSaveDialog::showDialog()
 
 	ReleaseGuard item_guard(item);
 
-	if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) return DialogResult::Error;
+	wchar_t* path_wstr;
+	if (FAILED(item->GetDisplayName(SIGDN_FILESYSPATH, &path_wstr))) return DialogResult::Error;
+	path = to_unicode(path_wstr);
+	CoTaskMemFree(path_wstr);
 
 	return DialogResult::OK;
 }
-
-const wchar_t* FileSaveDialog::getResultPath() const
-{
-	return path;
-}
-
-VK2D_END
