@@ -136,7 +136,7 @@ void Texture::update()
 		staging_buffer_memory, 0, size * sizeof(Color)
 	};
 
-	(void)device.flushMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.flushMappedMemoryRanges(1, &range));
 
 	auto cmd_buffer = inst.beginSingleTimeCommmand();
 
@@ -183,14 +183,14 @@ void Texture::update(const Color* pixels, const uvec2& size, const uvec2& offset
 		staging_buffer_memory, 0, VK_WHOLE_SIZE
 	};
 
-	(void)device.invalidateMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.invalidateMappedMemoryRanges(1, &range));
 
 	for (uint32_t h = 0; h < size.y; ++h) {
 		auto dst_off = (h + offset.y) * width + offset.x;
 		memcpy(map + dst_off, pixels + h * size.x, size.x * sizeof(Color));
 	}
 
-	(void)device.flushMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.flushMappedMemoryRanges(1, &range));
 
 	auto cmd_buffer = inst.beginSingleTimeCommmand();
 
@@ -292,7 +292,7 @@ void Texture::update(const Texture& texture, const uvec2& offset)
 		staging_buffer_memory, 0, VK_WHOLE_SIZE
 	};
 
-	(void)device.invalidateMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.invalidateMappedMemoryRanges(1, &range));
 }
 
 Image Texture::getImage() const
@@ -353,7 +353,7 @@ void Texture::invalidateStagingBuffer() const
 		staging_buffer_memory, 0, VK_WHOLE_SIZE
 	};
 
-	(void)device.invalidateMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.invalidateMappedMemoryRanges(1, &range));
 }
 
 void Texture::resize_impl(uint32_t width, uint32_t height, const Color& color, vk::ImageUsageFlags usage)

@@ -159,7 +159,7 @@ void VertexBuffer::update()
 		memory, 0,  inst.alignMemorySize(vertex_size * sizeof(Vertex))
 	};
 
-	(void)device.flushMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.flushMappedMemoryRanges(1, &range));
 }
 
 void VertexBuffer::update(const Vertex* data, size_t size, size_t offset)
@@ -173,7 +173,7 @@ void VertexBuffer::update(const Vertex* data, size_t size, size_t offset)
 		memory, offset, inst.alignMemorySize(size * sizeof(Vertex))
 	};
 
-	(void)device.flushMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.flushMappedMemoryRanges(1, &range));
 }
 
 Vertex* VertexBuffer::data()

@@ -324,7 +324,7 @@ void VK2DContextImpl::endSingleTimeCommmand(vk::CommandBuffer cmd_buffer)
 		1, &cmd_buffer
 	};
 
-	(void)queues[graphics_queue_family_idx].submit(1, &submit_info, nullptr);
+	VK2D_CHECK(queues[graphics_queue_family_idx].submit(1, &submit_info, nullptr));
 	queues[graphics_queue_family_idx].waitIdle();
 	device.freeCommandBuffers(command_pool, 1, &cmd_buffer);
 }

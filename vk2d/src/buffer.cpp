@@ -137,7 +137,7 @@ void Buffer::update()
 		memory, 0,  inst.alignMemorySize(memory_size)
 	};
 
-	(void)device.flushMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.flushMappedMemoryRanges(1, &range));
 }
 
 void Buffer::update(const void* data, size_t size, size_t offset)
@@ -151,7 +151,7 @@ void Buffer::update(const void* data, size_t size, size_t offset)
 		memory, offset, inst.alignMemorySize(size)
 	};
 
-	(void)device.flushMappedMemoryRanges(1, &range);
+	VK2D_CHECK(device.flushMappedMemoryRanges(1, &range));
 }
 
 void* Buffer::data()

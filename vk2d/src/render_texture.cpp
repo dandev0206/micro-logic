@@ -61,7 +61,7 @@ void RenderTexture::display()
 		1, &render_complete
 	};
 	
-	(void)inst.queues[inst.graphics_queue_family_idx].submit(1, &submit_info, frame_fence);
+	VK2D_CHECK(inst.queues[inst.graphics_queue_family_idx].submit(1, &submit_info, frame_fence));
 
 	render_begin = false;
 
@@ -181,8 +181,8 @@ void RenderTexture::beginRenderPass()
 	auto& device = inst.device;
 	auto size    = texture.size();
 	
-	(void)device.waitForFences(1, &frame_fence, true, UINT64_MAX);
-	(void)device.resetFences(1, &frame_fence);
+	VK2D_CHECK(device.waitForFences(1, &frame_fence, true, UINT64_MAX));
+	VK2D_CHECK(device.resetFences(1, &frame_fence));
 
 	device.resetCommandPool(cmd_pool);
 

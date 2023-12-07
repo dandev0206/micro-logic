@@ -72,7 +72,7 @@ void Window::display()
 		1, &render_complete
 	};
 
-	(void)inst.queues[inst.graphics_queue_family_idx].submit(1, &submit_info, frame.fence);
+	VK2D_CHECK(inst.queues[inst.graphics_queue_family_idx].submit(1, &submit_info, frame.fence));
 
 	vk::PresentInfoKHR present_info = {
 		1, &render_complete,
@@ -80,7 +80,7 @@ void Window::display()
 		&impl->frame_idx,
 	};
 
-	(void)inst.queues[impl->present_queue_family_idx].presentKHR(&present_info);
+	VK2D_CHECK(inst.queues[impl->present_queue_family_idx].presentKHR(&present_info));
 	impl->semaphore_idx = (impl->semaphore_idx + 1) % impl->semaphores.size();
 	impl->render_begin = false;
 }
@@ -308,8 +308,8 @@ void Window::beginRenderPass()
 	
 	auto& frame = impl->frames[impl->frame_idx];
 
-	(void)device.waitForFences(1, &frame.fence, true, UINT64_MAX);
-	(void)device.resetFences(1, &frame.fence);
+	VK2D_CHECK(device.waitForFences(1, &frame.fence, true, UINT64_MAX));
+	VK2D_CHECK(device.resetFences(1, &frame.fence));
 
 	auto fb_size     = impl->fb_size;
 	auto& cmd_buffer = frame.cmd_buffer;
