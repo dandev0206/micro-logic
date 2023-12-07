@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../vk2d_config.h"
-#include <vulkan/vulkan.hpp>
-#include <string>
-#include <map>
+#include "../core/include_vulkan.h"
 
 VK2D_BEGIN
 

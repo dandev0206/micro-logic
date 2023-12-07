@@ -2,6 +2,8 @@
 
 #include "gui/dialog.h"
 
+void showErrorDialog(const std::string& content, const vk2d::Window* owner = nullptr);
+
 class MessageBox : public Dialog {
 public:
 	MessageBox();

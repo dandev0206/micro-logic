@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../core/include_vulkan.h"
 #include "image.h"
-#include <vulkan/vulkan.hpp>
 
 VK2D_BEGIN
 
@@ -41,7 +41,8 @@ public:
 
 	VK2D_INLINE bool empty() const;
 
-	VK2D_INLINE vk::DescriptorSet getDescriptorSet() const;
+	VK2D_INLINE vk::DescriptorSet& getDescriptorSet();
+	VK2D_INLINE const vk::DescriptorSet& getDescriptorSet() const;
 
 private:
 	void copyImageToBuffer(vk::CommandBuffer cmd_buffer) const;
@@ -83,7 +84,12 @@ VK2D_INLINE bool Texture::empty() const
 	return !image;
 }
 
-VK2D_INLINE vk::DescriptorSet Texture::getDescriptorSet() const
+VK2D_INLINE vk::DescriptorSet& Texture::getDescriptorSet()
+{
+	return descriptor_set;
+}
+
+VK2D_INLINE const vk::DescriptorSet& Texture::getDescriptorSet() const
 {
 	return descriptor_set;
 }

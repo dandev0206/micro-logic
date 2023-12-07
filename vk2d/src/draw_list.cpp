@@ -1,11 +1,11 @@
+#define _USE_MATH_DEFINES
+
 #include "../include/vk2d/graphics/draw_list.h"
 
 #include "../include/vk2d/graphics/render_target.h"
 #include "../include/vk2d/graphics/render_states.h"
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
 #include <glm/gtx/rotate_vector.hpp>
-
-#define _USE_MATH_DEFINES
 #include <math.h>
 
 VK2D_BEGIN
@@ -99,7 +99,7 @@ void DrawCommand::addEllipse(const vec2& pos, const vec2& size, float width, con
 	vec2 p0 = pos + vec2(size.x, 0);
 
 	for (uint32_t i = 1; i <= seg_count; ++i) {
-		float theta = 2.f * M_PI * i / seg_count;
+		float theta = 2.f * (float)M_PI * i / seg_count;
 		vec2 p1 = pos + vec2(cosf(theta), sinf(theta));
 
 		addLine(p0, p1, width, col);
@@ -113,7 +113,7 @@ void DrawCommand::addFilledEllipse(const vec2& pos, const vec2& size, const Colo
 
 	vertices.emplace_back(pos, col);
 	for (uint32_t i = 0; i < seg_count; ++i) {
-		float theta = 2.f * M_PI * i / seg_count;
+		float theta = 2.f * (float)M_PI * i / seg_count;
 		vertices.emplace_back(pos + size * vec2(cosf(theta), sinf(theta)), col);
 	}
 
@@ -136,13 +136,13 @@ void DrawCommand::addFilledCapsule(const vec2& p0, const vec2& p1, float width, 
 
 	vertices.emplace_back(p0, col);
 	for (uint32_t i = 0; i <= seg_count / 2; ++i) {
-		float theta = 2.f * M_PI * i / seg_count;
+		float theta = 2.f * (float)M_PI * i / seg_count;
 		vertices.emplace_back(p0 + glm::rotate(normal, theta), col);
 	}
 
 	vertices.emplace_back(p1, col);
 	for (uint32_t i = seg_count / 2; i <= seg_count; ++i) {
-		float theta = 2.f * M_PI * i / seg_count;
+		float theta = 2.f * (float)M_PI * i / seg_count;
 		vertices.emplace_back(p1 + glm::rotate(normal, theta), col);
 	}
 
@@ -176,7 +176,7 @@ void DrawCommand::addFilledHalfCapsule(const vec2& p, const vec2& mid, float wid
 
 	vertices.emplace_back(p, col_p);
 	for (uint32_t i = 0; i <= seg_count / 2; ++i) {
-		float theta = 2.f * M_PI * i / seg_count;
+		float theta = 2.f * (float)M_PI * i / seg_count;
 		vertices.emplace_back(p + glm::rotate(normal, theta), col_p);
 	}
 	vertices.emplace_back(mid + normal, col_mid);
@@ -212,7 +212,7 @@ void DrawCommand::draw(RenderTarget& target, RenderStates& states) const
 {
 	if (vertices.empty()) return;
 
-	auto& inst      = VKInstance::get();
+	auto& inst      = VK2DContext::get();
 	auto cmd_buffer = target.getCommandBuffer();
 
 	//prepare buffers
@@ -280,7 +280,7 @@ uint32_t DrawCommand::reservePrims(uint32_t vertex_count, uint32_t index_count)
 	vertices.reserve(vertices.size() + vertex_count);
 	indices.reserve(indices.size() + index_count);
 
-	return vertices.size();
+	return (uint32_t)vertices.size();
 }
 
 DrawList::DrawList()

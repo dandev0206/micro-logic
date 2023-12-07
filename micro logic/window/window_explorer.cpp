@@ -49,7 +49,7 @@ void Window_Explorer::showUI()
 				dialog.owner       = &main_window.window;
 				dialog.title       = "Rename schematic sheet";
 				dialog.project_dir = main_window.project_name;
-				dialog.sheet_path  =
+				dialog.sheet_path  = sheet->path;
 				dialog.buttons     = "Rename;Cancel";
 				
 				if (dialog.showDialog() == "Rename")

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vk2d/system/event.hpp>
+#include <vk2d/system/event.h>
 #include <string>
 
 #include "../vector_type.h"

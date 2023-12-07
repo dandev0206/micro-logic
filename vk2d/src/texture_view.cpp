@@ -1,9 +1,9 @@
 #include "../include/vk2d/graphics/texture_view.h"
 
+#include "../include/vk2d/core/vk2d_context_impl.h"
 #include "../include/vk2d/graphics/texture.h"
 #include "../include/vk2d/graphics/render_target.h"
 #include "../include/vk2d/graphics/render_states.h"
-#include "../include/vk2d/vk_instance.h"
 
 VK2D_BEGIN
 
@@ -61,7 +61,7 @@ void TextureView::draw(RenderTarget& target, RenderStates& states) const
 {
 	VK2D_ASSERT(texture && "TextureView no texture");
 
-	auto& inst = VKInstance::get();
+	auto& inst = VK2DContext::get();
 
 	auto cmd_buffer = target.getCommandBuffer();
 

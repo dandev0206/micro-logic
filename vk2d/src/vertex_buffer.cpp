@@ -1,6 +1,8 @@
 #include "../include/vk2d/graphics/vertex_buffer.h"
 
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
+#include "../include/vk2d/graphics/render_target.h"
+#include "../include/vk2d/graphics/render_states.h"
 
 VK2D_BEGIN
 
@@ -36,7 +38,7 @@ VertexBuffer::VertexBuffer(const VertexBuffer& rhs)
 
 VertexBuffer::~VertexBuffer()
 {
-	auto& device = VKInstance::get().device;
+	auto& device = VK2DContext::get().device;
 
 	device.waitIdle();
 	device.destroy(buffer);
@@ -67,7 +69,7 @@ void VertexBuffer::resize(size_t size)
 {
 	if (vertex_size == size) return;
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto aligned = inst.alignMemorySize(sizeof(Vertex) * size);
 
@@ -99,7 +101,7 @@ void VertexBuffer::resize(size_t size)
 
 void VertexBuffer::reserve(size_t size)
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto aligned = inst.alignMemorySize(sizeof(Vertex) * size);
 
@@ -116,7 +118,7 @@ void VertexBuffer::reserve(size_t size)
 
 void VertexBuffer::shrink_to_fit()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto aligned = inst.alignMemorySize(sizeof(Vertex) * vertex_size);
 	
@@ -150,7 +152,7 @@ void VertexBuffer::update()
 {
 	if (vertex_size == 0) return;
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	vk::MappedMemoryRange range = {
@@ -162,7 +164,7 @@ void VertexBuffer::update()
 
 void VertexBuffer::update(const Vertex* data, size_t size, size_t offset)
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	memcpy(map, data, size * sizeof(Vertex));
@@ -221,7 +223,7 @@ const vk::Buffer& VertexBuffer::getBuffer() const
 
 void VertexBuffer::draw(RenderTarget& target, RenderStates& states) const
 {
-	auto& inst = VKInstance::get();
+	auto& inst = VK2DContext::get();
 
 	if (!buffer) return;
 	

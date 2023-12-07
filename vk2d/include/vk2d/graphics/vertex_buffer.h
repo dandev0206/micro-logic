@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "../core/include_vulkan.h"
+#include "../core/vertex.h"
 #include "drawable.h"
-#include "vertex.hpp"
 
 VK2D_BEGIN
 

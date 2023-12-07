@@ -199,7 +199,7 @@ Pin* LogicElement::getPin(const vec2& pos)
 	auto point = rotate_vector(pos - this->pos, invert_dir(dir));
 
 	for (const auto& layout : shared->pin_layouts)
-		if (point == layout.pos)
+		if (equal(point, layout.pos))
 			return &pins[layout.pinout - 1];
 
 	return nullptr;

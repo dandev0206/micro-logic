@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include "../graphics/image.h"
 
 VK2D_BEGIN

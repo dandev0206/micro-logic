@@ -1,17 +1,25 @@
-#ifdef _WIN32
+#include "../include/vk2d/graphics/drawable.h"
+
+#ifdef VK2D_PLATFORM_WINDOWS
 #include "platform/windows_window_impl.h"
 #endif
 
-#include "../include/vk2d/graphics/drawable.h"
-
 VK2D_BEGIN
 
-Window::Window(uint32_t width, uint32_t height, const char* title, int32_t style)
+Window::Window() VK2D_NOTHROW :
+	impl(nullptr)
+{}
+
+Window::Window(Window&& rhs) VK2D_NOTHROW :
+	impl(std::exchange(rhs.impl, nullptr))
+{}
+
+Window::Window(uint32_t width, uint32_t height, const char* title, WindowStyleFlags style)
 {
 	create(width, height, title, style);
 }
 
-Window::Window(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style)
+Window::Window(uint32_t width, uint32_t height, const char* title, const Window& parent, WindowStyleFlags style)
 {
 	create(width, height, title, parent, style);
 }
@@ -34,6 +42,7 @@ void Window::draw(const Drawable& drawable, const RenderOptions& options)
 		beginRenderPass();
 
 	auto& frame = impl->frames[impl->frame_idx];
+
 	frame.states.reset(options);
 	drawable.draw(*this, frame.states);
 }
@@ -42,7 +51,7 @@ void Window::display()
 {
 	if (!impl->render_begin || impl->minimized) return;
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto& frame  = impl->frames[impl->frame_idx];
 	
@@ -87,19 +96,24 @@ bool Window::waitEvent(Event& event)
 	return impl->waitEvent(event);
 }
 
-void Window::create(uint32_t width, uint32_t height, const char* title, int32_t style)
+bool Window::hasEvent() const
+{
+	return !impl->events.empty();
+}
+
+void Window::create(uint32_t width, uint32_t height, const char* title, WindowStyleFlags style)
 {
 	VK2D_ASSERT(!impl && "window already created");
 	
-	impl = new WindowImpl(width, height, title, nullptr, style);
+	impl = new VK2D_PRIV_NAME::WindowImpl(width, height, title, nullptr, style);
 }
 
-void Window::create(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style)
+void Window::create(uint32_t width, uint32_t height, const char* title, const Window& parent, WindowStyleFlags style)
 {
 	VK2D_ASSERT(!impl && "window already created");
 	VK2D_ASSERT(parent.impl && "parent is closed window");
 
-	impl = new WindowImpl(width, height, title, parent.impl, style);
+	impl = new VK2D_PRIV_NAME::WindowImpl(width, height, title, parent.impl, style);
 }
 
 void Window::close()
@@ -113,22 +127,22 @@ bool Window::isClosed() const
 	return impl == nullptr;
 }
 
-glm::ivec2 Window::getPosition() const
+ivec2 Window::getPosition() const
 {
 	return impl->position;
 }
 
-void Window::setPosition(const glm::ivec2 pos)
+void Window::setPosition(const ivec2 pos)
 {
 	impl->setPosition(pos);
 }
 
-glm::uvec2 Window::getSize() const
+uvec2 Window::getSize() const
 {
 	return impl->size;
 }
 
-void Window::setSize(const glm::uvec2& size) const
+void Window::setSize(const uvec2& size) const
 {
 	impl->setSize(size);
 }
@@ -287,7 +301,7 @@ void Window::beginRenderPass()
 {
 	if (impl->render_begin) return;
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	impl->acquireSwapchainImage();

@@ -114,6 +114,20 @@ static bool DialogButton(const char* label)
 	return ImGui::Button(label, size);
 }
 
+void showErrorDialog(const std::string& content, const vk2d::Window* owner)
+{
+	if (!owner) 
+		owner = &MainWindow::get().window;
+	
+	MessageBox msg_box;
+	msg_box.owner   = owner;
+	msg_box.title   = "Error";
+	msg_box.content = content;
+	msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
+
+	msg_box.showDialog();
+}
+
 MessageBox::MessageBox() :
 	Dialog(false),
 	buttons("Ok")

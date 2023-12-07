@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vector_type.h"
+#include "../core/vector_type.h"
 
 VK2D_BEGIN
 

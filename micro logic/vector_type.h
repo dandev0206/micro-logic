@@ -1,9 +1,9 @@
 #pragma once
 
 #include <imgui.h>
-#include <vk2d/vector_type.h>
-#include <vk2d/rect.hpp>
-#include <vk2d/graphics/color.hpp>
+#include <vk2d/core/vector_type.h>
+#include <vk2d/core/rect.h>
+#include <vk2d/core/color.h>
 
 using vec2  = vk2d::vec2;
 using ivec2 = vk2d::ivec2;

@@ -1,16 +1,17 @@
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/vk2d_context.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
 
-#include "../include/vk2d/graphics/vertex.hpp"
-#include "../include/vk2d/transform.hpp"
+#include "../include/vk2d/core/vertex.h"
+#include "../include/vk2d/graphics/transform.h"
 #include "shaders/shaders.h"
 
-#ifdef _WIN32 
+#ifdef VK2D_PLATFORM_WINDOWS
 #define PLATFORM_SURFACE_EXT_NAME "VK_KHR_win32_surface"
 #endif
 
 static bool check_layer_support(const char* layer_name) {
 	auto props = vk::enumerateInstanceLayerProperties();
-	
+
 	for (const auto& prop : props) {
 		if (!strcmp(prop.layerName.data(), layer_name)) return true;
 	}
@@ -23,7 +24,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags, 
 	if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
 		fprintf(stderr, "[vulkan] Debug report from ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
 		return VK_FALSE;
-	} else {
+	}
+	else {
 		fprintf(stderr, "[vulkan] Debug report from ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
 		return VK_FALSE;
 	}
@@ -31,26 +33,58 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags, 
 
 static struct DebugCallbackDispatcher {
 	void create(vk::Instance instance) {
-		vkCreateDebugReportCallbackEXT  = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+		vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
 		vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
 	}
 
 	static int getVkHeaderVersion() { return VK_HEADER_VERSION; }
 
-	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT   = nullptr;
+	PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = nullptr;
 	PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = nullptr;
 } debug_callback_dispatcher;
 
 VK2D_BEGIN
 
-VKInstance* VKInstance::context = nullptr;
-vk::DebugReportCallbackEXT VKInstance::debug_callback = nullptr;
+VK2D_PRIV_NAME::VK2DContextImpl* VK2DContext::impl = nullptr;
 
-VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*> layers, std::vector<const char*> extensions, bool debug_enable)
+VK2DContext::VK2DContext(const vk::ApplicationInfo& info, std::vector<const char*> layers, std::vector<const char*> extensions, bool debug_enable)
 {
-	VK2D_ASSERT(!context && "VKInstance already exists");
-	context = this;
+	if (impl) VK2D_ERROR("VK2D Context already exists");
 
+	impl = new VK2D_PRIV_NAME::VK2DContextImpl();
+	impl->init(info, std::move(layers), std::move(extensions), debug_enable);
+}
+
+VK2DContext::~VK2DContext()
+{
+	delete impl;
+}
+
+VK2D_PRIV_BEGIN
+
+VK2DContextImpl::~VK2DContextImpl()
+{
+	device.waitIdle();
+
+	basic_pipelines.clear();
+
+	device.destroy(renderpass);
+	device.destroy(command_pool);
+	device.destroy(descriptor_pool);
+	device.destroy(pipeline_cache);
+	device.destroy();
+
+	if (debug_callback)
+		instance.destroyDebugReportCallbackEXT(debug_callback, nullptr, debug_callback_dispatcher);
+
+	instance.destroy();
+}
+
+VK2DContextImpl::VK2DContextImpl()
+{}
+
+void VK2DContextImpl::init(const vk::ApplicationInfo& info, std::vector<const char*> layers, std::vector<const char*> extensions, bool debug_enable)
+{
 	if (debug_enable) {
 		if (!check_layer_support("VK_LAYER_KHRONOS_validation"))
 			VK2D_ERROR("VK_LAYER_KHRONOS_validation not supported");
@@ -82,6 +116,8 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 
 		debug_callback_dispatcher.create(instance);
 		debug_callback = instance.createDebugReportCallbackEXT(debug_report_create_info, nullptr, debug_callback_dispatcher);
+	} else {
+		debug_callback = nullptr;
 	}
 
 	{ // select physical device
@@ -89,7 +125,7 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 
 		for (const auto& device : physical_devices) {
 			auto type = device.getProperties().deviceType;
-			
+
 			if (type == vk::PhysicalDeviceType::eDiscreteGpu) {
 				physical_device = device;
 				break;
@@ -99,13 +135,13 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 		if (!physical_device)
 			physical_device = physical_devices.front();
 
-		physical_device_props        = physical_device.getProperties();
+		physical_device_props = physical_device.getProperties();
 		physical_device_memory_props = physical_device.getMemoryProperties();
 	}
 
 	{ // create device and queue
-		auto properties                 = physical_device.getQueueFamilyProperties();
-		float queue_priority            = 1.f;
+		auto properties = physical_device.getQueueFamilyProperties();
+		float queue_priority = 1.f;
 		std::vector<const char*> device_extensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			"VK_EXT_extended_dynamic_state"
@@ -148,9 +184,9 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 	}
 
 	{ // create descriptor pool
-		std::array<vk::DescriptorPoolSize, 1> pool_sizes = {{
+		std::array<vk::DescriptorPoolSize, 1> pool_sizes = { {
 			{ vk::DescriptorType::eCombinedImageSampler, 100 }
-		}};
+		} };
 
 		vk::DescriptorPoolCreateInfo pool_info = {
 			vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
@@ -162,7 +198,7 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 	}
 
 	{ // create renderpass
-		std::array<vk::AttachmentDescription, 1> color_attachments = {{
+		std::array<vk::AttachmentDescription, 1> color_attachments = { {
 			{
 				{},
 				vk::Format::eR8G8B8A8Unorm,
@@ -174,13 +210,13 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 				vk::ImageLayout::eUndefined,
 				vk::ImageLayout::ePresentSrcKHR,
 			},
-		}};
+		} };
 
-		std::array<vk::AttachmentReference, 1> attachment_refs = {{
+		std::array<vk::AttachmentReference, 1> attachment_refs = { {
 			{ 0, vk::ImageLayout::eColorAttachmentOptimal }
-		}};
+		} };
 
-		std::array<vk::SubpassDescription, 1> subpasses = {{
+		std::array<vk::SubpassDescription, 1> subpasses = { {
 			{
 				{},
 				vk::PipelineBindPoint::eGraphics,
@@ -188,7 +224,7 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 				attachment_refs,
 				{}
 			}
-		}};
+		} };
 
 		vk::RenderPassCreateInfo renderpass_info(
 			{},
@@ -249,7 +285,7 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 
 		builder.addShader(glsl_shader2_vert, sizeof(glsl_shader2_vert), vk::ShaderStageFlagBits::eVertex);
 		builder.addShader(glsl_shader2_frag, sizeof(glsl_shader2_frag), vk::ShaderStageFlagBits::eFragment);
-		
+
 		builder.setPrimitiveTopology(vk::PrimitiveTopology::eTriangleFan);
 
 		builder.addPushConstant(vk::ShaderStageFlagBits::eVertex, sizeof(Transform));
@@ -263,28 +299,7 @@ VKInstance::VKInstance(const vk::ApplicationInfo& info, std::vector<const char*>
 	}
 }
 
-VKInstance::~VKInstance()
-{
-	device.waitIdle();
-
-	basic_pipelines.clear();
-
-	device.destroy(renderpass);
-	device.destroy(command_pool);
-	device.destroy(descriptor_pool);
-	device.destroy(pipeline_cache);
-	device.destroy();
-
-	if (debug_callback) {
-		instance.destroyDebugReportCallbackEXT(debug_callback, nullptr, debug_callback_dispatcher);
-	}
-
-	instance.destroy();
-
-	context = nullptr;
-}
-
-vk::CommandBuffer VKInstance::beginSingleTimeCommmand()
+vk::CommandBuffer VK2DContextImpl::beginSingleTimeCommmand()
 {
 	vk::CommandBufferAllocateInfo buffer_info = {
 		command_pool,
@@ -299,7 +314,7 @@ vk::CommandBuffer VKInstance::beginSingleTimeCommmand()
 	return cmd_buffer;
 }
 
-void VKInstance::endSingleTimeCommmand(vk::CommandBuffer cmd_buffer)
+void VK2DContextImpl::endSingleTimeCommmand(vk::CommandBuffer cmd_buffer)
 {
 	cmd_buffer.end();
 
@@ -314,7 +329,7 @@ void VKInstance::endSingleTimeCommmand(vk::CommandBuffer cmd_buffer)
 	device.freeCommandBuffers(command_pool, 1, &cmd_buffer);
 }
 
-void VKInstance::transitionImageLayout(vk::CommandBuffer cmd_buffer, vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout)
+void VK2DContextImpl::transitionImageLayout(vk::CommandBuffer cmd_buffer, vk::Image image, vk::Format format, vk::ImageLayout old_layout, vk::ImageLayout new_layout)
 {
 	vk::ImageMemoryBarrier barrier = {
 		vk::AccessFlagBits::eNone,
@@ -340,36 +355,41 @@ void VKInstance::transitionImageLayout(vk::CommandBuffer cmd_buffer, vk::Image i
 
 		src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
 		dst_stage = vk::PipelineStageFlagBits::eTransfer;
-	} else if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferSrcOptimal) {
+	}
+	else if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eTransferSrcOptimal) {
 		barrier.srcAccessMask = vk::AccessFlagBits::eNone;
 		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
 
 		src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
 		dst_stage = vk::PipelineStageFlagBits::eTransfer;
-	} else if (old_layout == vk::ImageLayout::eTransferDstOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+	}
+	else if (old_layout == vk::ImageLayout::eTransferDstOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
 		src_stage = vk::PipelineStageFlagBits::eTransfer;
 		dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
-	} else if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+	}
+	else if (old_layout == vk::ImageLayout::eUndefined && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
 		barrier.srcAccessMask = vk::AccessFlagBits::eNone;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
 		src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
 		dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
-	} else if (old_layout == vk::ImageLayout::eTransferSrcOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+	}
+	else if (old_layout == vk::ImageLayout::eTransferSrcOptimal && new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
 		src_stage = vk::PipelineStageFlagBits::eTransfer;
 		dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
-	} else {
+	}
+	else {
 		VK2D_ERROR("unsupported layout transition");
 	}
 
 	cmd_buffer.pipelineBarrier(
-		src_stage, 
+		src_stage,
 		dst_stage,
 		{},
 		0, nullptr,
@@ -377,7 +397,7 @@ void VKInstance::transitionImageLayout(vk::CommandBuffer cmd_buffer, vk::Image i
 		1, &barrier);
 }
 
-void VKInstance::copyBuffer(vk::CommandBuffer cmd_buffer, vk::Buffer dst, vk::Buffer src, vk::DeviceSize dst_off, vk::DeviceSize src_off, vk::DeviceSize size)
+void VK2DContextImpl::copyBuffer(vk::CommandBuffer cmd_buffer, vk::Buffer dst, vk::Buffer src, vk::DeviceSize dst_off, vk::DeviceSize src_off, vk::DeviceSize size)
 {
 	vk::BufferCopy region = {
 		src_off, dst_off, size
@@ -386,7 +406,7 @@ void VKInstance::copyBuffer(vk::CommandBuffer cmd_buffer, vk::Buffer dst, vk::Bu
 	cmd_buffer.copyBuffer(src, dst, 1, &region);
 }
 
-std::pair<vk::DeviceMemory, vk::Buffer> VKInstance::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags props)
+std::pair<vk::DeviceMemory, vk::Buffer> VK2DContextImpl::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags props)
 {
 	vk::BufferCreateInfo buffer_info = {
 		{}, size, usage, vk::SharingMode::eExclusive
@@ -401,13 +421,13 @@ std::pair<vk::DeviceMemory, vk::Buffer> VKInstance::createBuffer(vk::DeviceSize 
 	};
 
 	auto memory = device.allocateMemory(memory_info);
-	
+
 	device.bindBufferMemory(buffer, memory, 0);
 
 	return std::make_pair(memory, buffer);
 }
 
-vk::DeviceMemory VKInstance::allocateDeviceMemory(vk::Buffer buffer, vk::DeviceSize size)
+vk::DeviceMemory VK2DContextImpl::allocateDeviceMemory(vk::Buffer buffer, vk::DeviceSize size)
 {
 	vk::MemoryRequirements req;
 	device.getBufferMemoryRequirements(buffer, &req);
@@ -420,13 +440,13 @@ vk::DeviceMemory VKInstance::allocateDeviceMemory(vk::Buffer buffer, vk::DeviceS
 	return device.allocateMemory(memory_info);
 }
 
-vk::DeviceSize VKInstance::alignMemorySize(vk::DeviceSize size) const
+vk::DeviceSize VK2DContextImpl::alignMemorySize(vk::DeviceSize size) const
 {
 	auto align = physical_device_props.limits.nonCoherentAtomSize;
 	return ((size - 1) / align + 1) * align;
 }
 
-uint32_t VKInstance::findMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags props) const
+uint32_t VK2DContextImpl::findMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags props) const
 {
 	const auto& mem_props = physical_device_memory_props;
 	for (uint32_t i = 0; i < mem_props.memoryTypeCount; i++) {
@@ -439,4 +459,5 @@ uint32_t VKInstance::findMemoryType(uint32_t type_filter, vk::MemoryPropertyFlag
 	return 0;
 }
 
+VK2D_PRIV_END
 VK2D_END

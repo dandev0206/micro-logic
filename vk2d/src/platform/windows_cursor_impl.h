@@ -1,5 +1,3 @@
-#pragma once
-
 #include "../../include/vk2d/system/cursor.h"
 
 #define WIN32_LEAN_AND_MEAN

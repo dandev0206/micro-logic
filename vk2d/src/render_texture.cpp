@@ -1,7 +1,7 @@
 #include "../include/vk2d/graphics/render_texture.h"
 
 #include "../include/vk2d/graphics/drawable.h"
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
 
 VK2D_BEGIN
 
@@ -47,7 +47,7 @@ void RenderTexture::display()
 {
 	if (!render_begin) return;
 
-	auto& inst = VKInstance::get();
+	auto& inst = VK2DContext::get();
 	auto& device = inst.device;
 
 	cmd_buffer.endRenderPass();
@@ -76,7 +76,7 @@ void RenderTexture::display()
 
 void RenderTexture::resize(uint32_t width, uint32_t height, const Color& color)
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	
 	device.waitIdle();
@@ -124,7 +124,7 @@ void RenderTexture::resize(const uvec2& size)
 
 void RenderTexture::destroy()
 {	
-	auto& device = VKInstance::get().device;
+	auto& device = VK2DContext::get().device;
 
 	device.waitIdle();
 	device.destroy(frame_buffer);
@@ -150,7 +150,7 @@ Texture& RenderTexture::getTexture()
 
 Texture RenderTexture::release()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	
 	auto ret = std::move(texture);
@@ -177,7 +177,7 @@ vec2 RenderTexture::size() const
 
 void RenderTexture::beginRenderPass()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto size    = texture.size();
 	

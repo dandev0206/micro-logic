@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vk2d/system/window.h>
-#include <vk2d/system/dialog.h>
 #include <vk2d/graphics/texture.h>
 #include <vk2d/system/font.h>
 #include <chrono>

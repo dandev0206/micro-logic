@@ -1,13 +1,11 @@
 #pragma once
 
+#include "../core/vertex.h"
+#include "../core/rect.h"
 #include "render_options.h"
 #include "vertex_buffer.h"
 #include "buffer.h"
 #include "drawable.h"
-#include "vertex.hpp"
-#include "../Rect.hpp"
-
-#include <vector>
 
 VK2D_BEGIN
 

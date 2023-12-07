@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\vk2d\core\include_vulkan.h" />
     <ClInclude Include="include\vk2d\graphics\buffer.h" />
     <ClInclude Include="include\vk2d\graphics\drawable.h" />
     <ClInclude Include="include\vk2d\graphics\draw_list.h" />
@@ -148,9 +149,9 @@
     <ClInclude Include="include\vk2d\system\font.h" />
     <ClInclude Include="include\vk2d\graphics\render_texture.h" />
     <ClInclude Include="include\vk2d\system\clipboard.h" />
-    <ClInclude Include="include\vk2d\system\event.hpp" />
+    <ClInclude Include="include\vk2d\system\event.h" />
     <ClInclude Include="include\vk2d\graphics\image.h" />
-    <ClInclude Include="include\vk2d\graphics\color.hpp" />
+    <ClInclude Include="include\vk2d\core\color.h" />
     <ClInclude Include="include\vk2d\graphics\pipeline.h" />
     <ClInclude Include="include\vk2d\graphics\render_options.h" />
     <ClInclude Include="include\vk2d\graphics\texture_view.h" />
@@ -159,19 +160,22 @@
     <ClInclude Include="include\vk2d\graphics\render_target.h" />
     <ClInclude Include="include\vk2d\graphics\texture.h" />
     <ClInclude Include="include\vk2d\system\cursor.h" />
-    <ClInclude Include="include\vk2d\vector_type.h" />
-    <ClInclude Include="include\vk2d\graphics\vertex.hpp" />
+    <ClInclude Include="include\vk2d\core\vector_type.h" />
+    <ClInclude Include="include\vk2d\core\vertex.h" />
     <ClInclude Include="include\vk2d\graphics\vertex_buffer.h" />
-    <ClInclude Include="include\vk2d\vk2d_config.h" />
-    <ClInclude Include="include\vk2d\vk_instance.h" />
-    <ClInclude Include="include\vk2d\rect.hpp" />
+    <ClInclude Include="include\vk2d\core\vk2d_context_impl.h" />
+    <ClInclude Include="include\vk2d\core\vk2d_def.h" />
+    <ClInclude Include="include\vk2d\vk2d_context.h" />
+    <ClInclude Include="include\vk2d\core\rect.h" />
     <ClInclude Include="include\vk2d\system\window.h" />
     <ClInclude Include="include\vk2d\system\mouse.h" />
-    <ClInclude Include="src\platform\windows_cursor_impl.hpp" />
+    <ClInclude Include="src\platform\windows_cursor_impl.h" />
     <ClInclude Include="src\platform\window_impl.h" />
-    <ClInclude Include="include\vk2d\transform.hpp" />
+    <ClInclude Include="include\vk2d\graphics\transform.h" />
     <ClInclude Include="src\shaders\shaders.h" />
-    <ClInclude Include="include\vk2d\transformable.hpp" />
+    <ClInclude Include="include\vk2d\graphics\transformable.hpp" />
+    <ClInclude Include="thirdparty\stb\stb_image.h" />
+    <ClInclude Include="thirdparty\stb\stb_image_write.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\draw_list.cpp" />
@@ -192,7 +196,7 @@
     <ClCompile Include="src\texture_view.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\vertex_buffer.cpp" />
-    <ClCompile Include="src\vk_instance.cpp" />
+    <ClCompile Include="src\vk2d_context.cpp" />
     <ClCompile Include="src\window.cpp" />
     <ClInclude Include="src\platform\windows_window_impl.h" />
   </ItemGroup>

@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\vk2d\graphics\vertex.hpp">
+    <ClInclude Include="include\vk2d\core\vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\vk2d_config.h">
+    <ClInclude Include="include\vk2d\core\vk2d_def.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\graphics\color.hpp">
+    <ClInclude Include="include\vk2d\core\color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\vk_instance.h">
+    <ClInclude Include="include\vk2d\vk2d_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\vk2d\graphics\vertex_buffer.h">
@@ -36,7 +36,7 @@
     <ClInclude Include="include\vk2d\graphics\texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\rect.hpp">
+    <ClInclude Include="include\vk2d\core\rect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\vk2d\graphics\render_target.h">
@@ -45,7 +45,7 @@
     <ClInclude Include="include\vk2d\system\window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\system\event.hpp">
+    <ClInclude Include="include\vk2d\system\event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\platform\window_impl.h">
@@ -54,7 +54,7 @@
     <ClInclude Include="include\vk2d\system\keyboard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\vector_type.h">
+    <ClInclude Include="include\vk2d\core\vector_type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\vk2d\system\mouse.h">
@@ -63,7 +63,7 @@
     <ClInclude Include="include\vk2d\graphics\pipeline.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\transform.hpp">
+    <ClInclude Include="include\vk2d\graphics\transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\shaders\shaders.h">
@@ -75,7 +75,7 @@
     <ClInclude Include="include\vk2d\graphics\texture_view.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\vk2d\transformable.hpp">
+    <ClInclude Include="include\vk2d\graphics\transformable.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\vk2d\graphics\render_options.h">
@@ -87,7 +87,7 @@
     <ClInclude Include="include\vk2d\system\cursor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\platform\windows_cursor_impl.hpp">
+    <ClInclude Include="src\platform\windows_cursor_impl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\vk2d\system\clipboard.h">
@@ -114,11 +114,20 @@
     <ClInclude Include="include\vk2d\graphics\draw_list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="thirdparty\stb\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\stb\stb_image_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vk2d\core\include_vulkan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vk2d\core\vk2d_context_impl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\vk_instance.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -171,6 +180,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\draw_list.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\vk2d_context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

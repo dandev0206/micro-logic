@@ -1,12 +1,10 @@
-#pragma once
+#define VK2D_USE_PLATFORM
 
 #include "../../include/vk2d/system/window.h"
 
-#include "../../include/vk2d/vk_instance.h"
+#include "../../include/vk2d/core/vk2d_context_impl.h"
 #include "../../include/vk2d/graphics/render_states.h"
 
-#include <vulkan/vulkan.hpp>
-#include <string>
 #include <queue>
 
 VK2D_BEGIN
@@ -91,7 +89,7 @@ public:
 
 
 	void init() {
-		auto& inst = VKInstance::get();
+		auto& inst = VK2DContext::get();
 
 		auto properties = inst.physical_device.getQueueFamilyProperties();
 
@@ -109,7 +107,7 @@ public:
 	}
 
 	void destroy() {
-		auto& inst   = VKInstance::get();
+		auto& inst   = VK2DContext::get();
 		auto& device = inst.device;
 
 		device.waitIdle();
@@ -121,7 +119,7 @@ public:
 	}
 
 	void recreate_swapchain() {
-		auto& inst   = VKInstance::get();
+		auto& inst   = VK2DContext::get();
 		auto& device = inst.device;
 
 		device.waitIdle();
@@ -178,7 +176,7 @@ public:
 	}
 
 	void acquireSwapchainImage() {
-		auto& device = VKInstance::get().device;
+		auto& device = VK2DContext::get().device;
 
 		if (update_swapchain)
 			recreate_swapchain();
@@ -222,7 +220,7 @@ private:
 	}
 
 	void create_window_frame() {
-		auto& inst   = VKInstance::get();
+		auto& inst   = VK2DContext::get();
 		auto& device = inst.device;
 
 		auto images = device.getSwapchainImagesKHR(swapchain);
@@ -284,7 +282,7 @@ private:
 	}
 
 	void create_frame_semaphores() {
-		auto& device = VKInstance::get().device;
+		auto& device = VK2DContext::get().device;
 
 		for (int i = 0; i < frames.size(); ++i) {
 			FrameSemaphore semaphore;
@@ -299,7 +297,7 @@ private:
 	}
 
 	void destroy_window_frame() {
-		auto& device = VKInstance::get().device;
+		auto& device = VK2DContext::get().device;
 
 		for (auto& frame : frames) {
 			device.destroy(frame.image_view);
@@ -313,7 +311,7 @@ private:
 	}
 
 	void destroy_frame_semaphores() {
-		auto& device = VKInstance::get().device;
+		auto& device = VK2DContext::get().device;
 
 		for (auto& semaphore : semaphores) {
 			device.destroy(semaphore.image_acquired);

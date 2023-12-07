@@ -2,6 +2,14 @@
 
 #include "vector_type.h"
 
+inline float dot(const vec2& a, const vec2& b) {
+	return a.x * b.x + a.y * b.y;
+}
+
+inline float equal(const vec2& a, const vec2& b) {
+	return dot(a - b, a - b) < 1e5;
+}
+
 inline vec2 lerp(const vec2& a, const vec2& b, float t) {
 	return a + t * (b - a);
 }

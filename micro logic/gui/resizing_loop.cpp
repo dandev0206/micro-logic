@@ -1,8 +1,8 @@
 #include "resizing_loop.h"
 
-#include <thread>
+#include "../platform/platform_impl.h"
 #include <imgui_internal.h>
-#include "platform/platform_impl.h"
+#include <thread>
 
 ResizingLoop::ResizingLoop() :
 	delta_time(1.f / 60.f),

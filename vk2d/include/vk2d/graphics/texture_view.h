@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../core/color.h"
+#include "../core/rect.h"
+#include "transformable.hpp"
 #include "drawable.h"
-#include "color.hpp"
-#include "../transformable.hpp"
-#include "../rect.hpp"
 
 VK2D_BEGIN
 

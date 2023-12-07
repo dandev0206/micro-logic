@@ -22,7 +22,7 @@ public:
 	~Dialog();
 
 	mutable std::string title;
-	vk2d::Window*       owner;
+	const vk2d::Window* owner;
 
 private:
 	priv::DialogImpl* impl;

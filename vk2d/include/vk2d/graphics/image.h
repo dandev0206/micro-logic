@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../rect.hpp"
-#include "color.hpp"
-
+#include "../core/color.h"
+#include "../core/rect.h"
 #include <vector>
 
 VK2D_BEGIN

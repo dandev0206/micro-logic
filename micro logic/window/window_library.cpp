@@ -1,13 +1,12 @@
 #include "window_library.h"
 
+#define ICON_TEXTURE_VAR main_window.textures[TEXTURE_ICONS_IDX]
 #include <imgui.h>
 #include <imgui_internal.h>
 #include "../gui/imgui_custom.h"
 #include "../main_window.h"
 #include "../side_menus.h"
 #include "../micro_logic_config.h"
-
-#define ICON_TEXTURE_VAR main_window.textures[TEXTURE_ICONS_IDX]
 #include "../icons.h"
 
 Window_Library::Window_Library() :
@@ -209,5 +208,3 @@ void Window_Library::resetPreview()
 	preview_pos   = vec2(0.f, 0.f);
 	preview_scale = 1.f;
 }
-
-

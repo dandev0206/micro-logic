@@ -4,7 +4,7 @@
 #include <thread>
 #include "imgui_impl_vk2d.h"
 #include "resizing_loop.h"
-#include "platform/platform_impl.h"
+#include "../platform/platform_impl.h"
 #include "../micro_logic_config.h"
 
 namespace priv {

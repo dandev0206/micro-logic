@@ -1,21 +1,20 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-#include "graphics/pipeline.h"
+#include "../include/vk2d/vk2d_context.h"
+#include "../graphics/pipeline.h"
 
 VK2D_BEGIN
+VK2D_PRIV_BEGIN
 
-class VKInstance {
-	VK2D_NOCOPY(VKInstance)
-	VK2D_NOMOVE(VKInstance)
+class VK2DContextImpl {
+	friend class VK2DContext;
+
+	VK2DContextImpl();
+	~VK2DContextImpl();
+
+	void init(const vk::ApplicationInfo& info, std::vector<const char*> layers, std::vector<const char*> extensions, bool debug_enable = false);
 
 public:
-	static VK2D_INLINE VKInstance& get() { return *context; }
-
-public:
-	VKInstance(const vk::ApplicationInfo& info, std::vector<const char*> layers, std::vector<const char*> extensions, bool debug_enable = false);
-	~VKInstance();
-
 	vk::CommandBuffer beginSingleTimeCommmand();
 	void endSingleTimeCommmand(vk::CommandBuffer cmd_buffer);
 
@@ -29,7 +28,7 @@ public:
 	uint32_t findMemoryType(uint32_t type_filter, vk::MemoryPropertyFlags props) const;
 
 public:
-	vk::Instance           instance;
+	vk::Instance instance;
 
 	vk::PhysicalDevice                 physical_device;
 	vk::PhysicalDeviceProperties       physical_device_props;
@@ -45,9 +44,8 @@ public:
 
 	std::vector<Pipeline>  basic_pipelines;
 
-private:
-	static VKInstance* context;
-	static vk::DebugReportCallbackEXT debug_callback;
+	vk::DebugReportCallbackEXT debug_callback;
 };
 
+VK2D_PRIV_END
 VK2D_END

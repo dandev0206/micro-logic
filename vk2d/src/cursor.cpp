@@ -1,15 +1,15 @@
-#ifdef _WIN32
-#include "platform/windows_cursor_impl.hpp"
+#include "../include/vk2d/core/vk2d_def.h"
 
-VK2D_BEGIN
-
-HCURSOR CursorImpl::last_cursor = LoadCursor(NULL, IDC_ARROW);
-bool    CursorImpl::cursor_visible = true;
-
-VK2D_END
+#ifdef VK2D_PLATFORM_WINDOWS
+#include "platform/windows_cursor_impl.h"
 #endif
 
 VK2D_BEGIN
+
+#ifdef VK2D_PLATFORM_WINDOWS
+HCURSOR CursorImpl::last_cursor    = LoadCursor(NULL, IDC_ARROW);
+bool    CursorImpl::cursor_visible = true;
+#endif
 
 void Cursor::setVisible(bool visible)
 {

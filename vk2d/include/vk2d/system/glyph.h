@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../rect.hpp"
+#include "../core/rect.h"
 
 VK2D_BEGIN
 

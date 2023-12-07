@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <vk2d/vk_instance.h>
+#include <vk2d/core/vk2d_context_impl.h>
 #include <vk2d/system/clipboard.h>
 #include <vk2d/system/cursor.h>
 #include <vk2d/system/keyboard.h>
@@ -13,7 +13,7 @@
 #include <vector>
 #include <map>
 
-#ifdef _WIN32
+#ifdef VK2D_PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
@@ -646,7 +646,7 @@ IMGUI_VK2D_API void Update(vk2d::Window& window, const ivec2& mouse_pos, float d
 }
 
 static void prepare_frame_data(ImDrawData* draw_data, ViewportWindowData::FrameData& frame) {
-	auto& inst   = vk2d::VKInstance::get();
+	auto& inst   = vk2d::VK2DContext::get();
 	auto& device = inst.device;
 
 	{ // prepare vertex/index buffers
@@ -679,7 +679,7 @@ IMGUI_VK2D_API void Render(ImDrawData* draw_data)
 {
 	if (!draw_data || draw_data->TotalVtxCount == 0) return;
 
-	auto& inst     = vk2d::VKInstance::get();
+	auto& inst     = vk2d::VK2DContext::get();
 	auto* viewport = draw_data->OwnerViewport;
 	auto& vd       = *(ViewportWindowData*)viewport->PlatformUserData;
 	auto& bd       = *vd.backend;

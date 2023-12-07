@@ -1,6 +1,6 @@
 #include "../include/vk2d/graphics/pipeline.h"
 
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
 
 VK2D_BEGIN
 
@@ -30,7 +30,7 @@ Pipeline& Pipeline::operator=(Pipeline&& rhs) VK2D_NOTHROW
 
 void Pipeline::destroy()
 {
-	auto& device = VKInstance::get().device;
+	auto& device = VK2DContext::get().device;
 
 	device.waitIdle();
 	device.destroy(std::exchange(pipeline, nullptr));
@@ -69,7 +69,7 @@ PipelineBuilder::PipelineBuilder() :
 
 Pipeline PipelineBuilder::build()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	Pipeline shader;
@@ -162,7 +162,7 @@ Pipeline PipelineBuilder::build()
 
 std::shared_ptr<vk::PipelineLayout> PipelineBuilder::getPipelineLayout()
 {
-	auto& device = VKInstance::get().device;
+	auto& device = VK2DContext::get().device;
 
 	if (!pipeline_layout) {
 		vk::DescriptorSetLayoutCreateInfo descriptor_set_info = {
@@ -189,7 +189,7 @@ std::shared_ptr<vk::PipelineLayout> PipelineBuilder::getPipelineLayout()
 
 void PipelineBuilder::addShader(const uint32_t* bytes, size_t size_in_byte, vk::ShaderStageFlagBits stage)
 {
-	auto& device = VKInstance::get().device;
+	auto& device = VK2DContext::get().device;
 
 	for (const auto& module : shader_modules) {
 		if (module.stage == stage)

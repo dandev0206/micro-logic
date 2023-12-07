@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vk2d/system/event.hpp>
 #include <vk2d/graphics/texture.h>
+#include <vk2d/system/event.h>
 
 class SideMenu abstract {
 public:

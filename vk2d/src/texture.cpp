@@ -1,6 +1,6 @@
 #include "../include/vk2d/graphics/texture.h"
 
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
 
 VK2D_BEGIN
 
@@ -13,7 +13,7 @@ Texture::Texture() :
 
 uvec2 Texture::getMaximumSize()
 {
-	auto& inst = VKInstance::get();
+	auto& inst = VK2DContext::get();
 	auto size  = inst.physical_device_props.limits.maxImageDimension2D;
 	
 	return uvec2(size, size);
@@ -105,7 +105,7 @@ void Texture::destroy()
 {
 	if (empty()) return;
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	device.waitIdle();
@@ -128,7 +128,7 @@ void Texture::destroy()
 
 void Texture::update()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto size    = width * height;
 
@@ -176,7 +176,7 @@ void Texture::update(const Color* pixels, const uvec2& size, const uvec2& offset
 	VK2D_ASSERT(offset.x + size.x <= width);
 	VK2D_ASSERT(offset.y + size.y <= height);
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	vk::MappedMemoryRange range = {
@@ -235,7 +235,7 @@ void Texture::update(const Texture& texture, const uvec2& offset)
 	VK2D_ASSERT(offset.x + texture.width <= width);
 	VK2D_ASSERT(offset.y + texture.height <= height);
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	auto cmd_buffer = inst.beginSingleTimeCommmand();
@@ -307,7 +307,7 @@ Image Texture::getImage() const
 
 void Texture::copyImageToBuffer(vk::CommandBuffer cmd_buffer) const
 {
-	auto& inst = VKInstance::get();
+	auto& inst = VK2DContext::get();
 
 	inst.transitionImageLayout(
 		cmd_buffer,
@@ -339,7 +339,7 @@ void Texture::copyImageToBuffer(vk::CommandBuffer cmd_buffer) const
 
 void Texture::invalidateStagingBuffer() const
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto size    = width * height;
 
@@ -362,7 +362,7 @@ void Texture::resize_impl(uint32_t width, uint32_t height, const Color& color, v
 
 	if (!empty()) destroy();
 	
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto  size   = width * height;
 

@@ -1,12 +1,8 @@
-#pragma once
-
-#define VK_USE_PLATFORM_WIN32_KHR
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windowsx.h>
 #include "window_impl.h"
-#include "../../include/vk2d/vk_instance.h"
+
+#include "../../include/vk2d/core/vk2d_context_impl.h"
 #include "../../include/vk2d/system/cursor.h"
+#include <windowsx.h>
 
 #define WNDCLASSNAME "vk2d_window_class"
 
@@ -18,8 +14,6 @@
 static uint32_t window_counter = 0;
 
 VK2D_BEGIN
-
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static void set_process_dpi_aware()
 {
@@ -62,7 +56,7 @@ static void set_process_dpi_aware()
 	}
 }
 
-static DWORD create_style(int32_t style)
+static DWORD create_style(WindowStyleFlags style)
 {
 	DWORD dw_style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
 	
@@ -81,7 +75,7 @@ static DWORD create_style(int32_t style)
 	return dw_style;
 }
 
-static DWORD create_ex_style(int32_t style)
+static DWORD create_ex_style(WindowStyleFlags style)
 {
 	DWORD dw_ex_style = WS_EX_APPWINDOW;
 
@@ -164,6 +158,10 @@ static uint32_t* to_utf32(uint16_t* begin, uint16_t* end, uint32_t* output)
 	return output;
 }
 
+VK2D_PRIV_BEGIN
+
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 static void registerWindowClass() {
 	WNDCLASSEX wc;
 	wc.cbSize        = sizeof(WNDCLASSEX);
@@ -185,7 +183,7 @@ static void registerWindowClass() {
 
 class WindowImpl : public WindowImplBase {
 public:
-	WindowImpl(uint32_t width, uint32_t height, const char* title, const WindowImpl* parent, int32_t style) :
+	WindowImpl(uint32_t width, uint32_t height, const char* title, const WindowImpl* parent, WindowStyleFlags style) :
 		WindowImplBase(),
 		hwnd(nullptr),
 		is_mouse_inside(false),
@@ -234,7 +232,7 @@ public:
 		this->title = title;
 
 		{
-			auto& inst = VKInstance::get();
+			auto& inst = VK2DContext::get();
 
 			vk::Win32SurfaceCreateInfoKHR info(
 				{},
@@ -312,7 +310,7 @@ public:
 
 	void setFraneBufferSize(const glm::uvec2& size) {
 		if (this->fb_size != size) {
-			RECT rect{ 0.f, 0.f, size.x, size.y };
+			RECT rect{ 0, 0, (LONG)size.x, (LONG)size.y };
 			
 			auto style    = GetWindowLong(hwnd, GWL_STYLE);
 			auto ex_style = GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -361,7 +359,7 @@ public:
 	void setResizable(bool value) {
 		auto style = GetWindowLong(hwnd, GWL_STYLE);
 
-		if ((style & WS_THICKFRAME) != value) {
+		if ((bool)(style & WS_THICKFRAME) != value) {
 			if (value) {
 				style |= WS_THICKFRAME;
 			} else {
@@ -691,4 +689,5 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
+VK2D_PRIV_END
 VK2D_END

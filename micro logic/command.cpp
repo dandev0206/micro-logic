@@ -53,6 +53,10 @@ bool CommandGroup::empty() const
 	return commands.empty();
 }
 
+void Command_Add::onPush(SchematicSheet& sheet)
+{
+}
+
 void Command_Add::redo(SchematicSheet& sheet)
 {
 	for (auto& elem : elements)
@@ -87,6 +91,11 @@ std::string Command_Add::what() const
 
 void Command_Select::onPush(SchematicSheet& sheet)
 {
+	assert(type != Clear || selections.empty() && aabb == AABB());
+	assert(type != SelectAppend || !selections.empty() && aabb != AABB());
+	assert(type != SelectInvert || selections.empty() && aabb != AABB());
+	assert(type != Unselect || !selections.empty() && aabb != AABB());
+	
 	sortSelections();
 }
 

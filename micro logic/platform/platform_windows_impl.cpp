@@ -2,11 +2,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
+#include "platform_impl.h"
 #include <Windows.h>
 #include <windowsx.h>
 #include <timeapi.h>
 #include <dwmapi.h>
-#include "platform_impl.h"
+#include <map>
 
 #pragma comment(lib, "Winmm.lib")
 #pragma comment(lib, "dwmapi.lib")

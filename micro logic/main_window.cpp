@@ -26,6 +26,7 @@
 #define STRINGIZE(x) STRINGIZE_DETAIL(x)
 #define IMGUI_NO_LABEL "##" STRINGIZE(__COUNTER__)
 
+using namespace std::string_literals;
 namespace fs = std::filesystem;
 
 MainWindow* MainWindow::main_window = nullptr;
@@ -477,13 +478,13 @@ bool MainWindow::saveProject()
 	auto res = doc.SaveFile(project_path.c_str());
 
 	if (res != tinyxml2::XMLError::XML_SUCCESS) {
-		MessageBox msg_box;
-		msg_box.owner   = &window;
-		msg_box.title   = "Error";
-		msg_box.content = "Error occured while saving project '" + project_path + "'";
-		msg_box.icon    = icon_to_texture_view(ICON_ERROR_BIG);
-
-		msg_box.showDialog();
+		showErrorDialog(
+			"An error '"s + 
+			doc.ErrorIDToName(res) + 
+			"' occured while saving project '" + 
+			project_path + 
+			"'"
+		);
 		return false;
 	}
 

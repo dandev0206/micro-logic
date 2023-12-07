@@ -1,6 +1,6 @@
 #pragma once
 
-#include "color.hpp"
+#include "color.h"
 
 VK2D_BEGIN
 

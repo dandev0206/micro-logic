@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../vk2d_config.h"
+#include "../core/vk2d_def.h"
 
 VK2D_BEGIN
 

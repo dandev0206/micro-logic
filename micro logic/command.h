@@ -31,6 +31,7 @@ public:
 
 class Command_Add : public Command {
 public:
+	void onPush(SchematicSheet& sheet) override;
 	void redo(SchematicSheet& sheet) override;
 	void undo(SchematicSheet& sheet) override;
 	std::string what() const override;

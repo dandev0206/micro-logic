@@ -1,6 +1,6 @@
 #include "../include/vk2d/graphics/buffer.h"
 
-#include "../include/vk2d/vk_instance.h"
+#include "../include/vk2d/core/vk2d_context_impl.h"
 
 VK2D_BEGIN
 
@@ -33,7 +33,7 @@ Buffer::Buffer(Buffer&& rhs) VK2D_NOTHROW
 
 Buffer::~Buffer()
 {
-	auto& device = VKInstance::get().device;
+	auto& device = VK2DContext::get().device;
 
 	device.waitIdle();
 	device.destroy(buffer);
@@ -49,7 +49,7 @@ void Buffer::resize(size_t size, vk::BufferUsageFlags usage)
 {
 	if (buffer_size == size) return;
 
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto aligned = inst.alignMemorySize(size);
 
@@ -81,7 +81,7 @@ void Buffer::resize(size_t size, vk::BufferUsageFlags usage)
 
 void Buffer::reserve(size_t size, vk::BufferUsageFlags usage)
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto aligned = inst.alignMemorySize(size);
 
@@ -98,7 +98,7 @@ void Buffer::reserve(size_t size, vk::BufferUsageFlags usage)
 
 void Buffer::shrink_to_fit()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 	auto aligned = inst.alignMemorySize(buffer_size);
 	
@@ -130,7 +130,7 @@ void Buffer::shrink_to_fit()
 
 void Buffer::update()
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	vk::MappedMemoryRange range = {
@@ -142,7 +142,7 @@ void Buffer::update()
 
 void Buffer::update(const void* data, size_t size, size_t offset)
 {
-	auto& inst   = VKInstance::get();
+	auto& inst   = VK2DContext::get();
 	auto& device = inst.device;
 
 	memcpy(map, data, size);

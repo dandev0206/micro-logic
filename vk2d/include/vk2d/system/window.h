@@ -1,13 +1,17 @@
 #pragma once
 
-#include <memory>
+#include "../core/rect.h"
+#include "../system/event.h"
 #include "../graphics/render_target.h"
-#include "../system/event.hpp"
-#include "../rect.hpp"
 
 VK2D_BEGIN
+VK2D_PRIV_BEGIN
 
 class WindowImpl;
+
+VK2D_PRIV_END
+
+using WindowStyleFlags = uint32_t;
 
 class Window : public RenderTarget
 {
@@ -26,10 +30,10 @@ public:
 		Default   = Titlebar | Resizable | Visible
 	};
 
-	Window() VK2D_NOTHROW = default;
-	Window(Window&& rhs) VK2D_NOTHROW = default;
-	Window(uint32_t width, uint32_t height, const char* title, int32_t style = Style::Default);
-	Window(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style = Style::Default);
+	Window() VK2D_NOTHROW;
+	Window(Window&& rhs) VK2D_NOTHROW;
+	Window(uint32_t width, uint32_t height, const char* title, WindowStyleFlags style = Style::Default);
+	Window(uint32_t width, uint32_t height, const char* title, const Window& parent, WindowStyleFlags style = Style::Default);
 	~Window();
 
 	void draw(const Drawable& drawable) override;
@@ -38,9 +42,10 @@ public:
 
 	bool pollEvent(Event& event);
 	bool waitEvent(Event& event);
+	bool hasEvent() const;
 
-	void create(uint32_t width, uint32_t height, const char* title, int32_t style = Style::Default);
-	void create(uint32_t width, uint32_t height, const char* title, const Window& parent, int32_t style = Style::Default);
+	void create(uint32_t width, uint32_t height, const char* title, WindowStyleFlags style = Style::Default);
+	void create(uint32_t width, uint32_t height, const char* title, const Window& parent, WindowStyleFlags style = Style::Default);
 	void close();
 
 	bool isClosed() const;
@@ -101,7 +106,7 @@ private:
 	uint32_t getFrameCount() const override;
 
 private:
-	WindowImpl* impl;
+	VK2D_PRIV_NAME::WindowImpl* impl;
 };
 
 VK2D_END

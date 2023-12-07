@@ -1,4 +1,4 @@
-#include <vk2d/vk_instance.h>
+#include <vk2d/vk2d_context.h>
 #include "main_window.h"
 
 using namespace std;
@@ -7,9 +7,9 @@ using namespace vk2d;
 int main() {
 	vk::ApplicationInfo info;
 	info.pApplicationName = "micro logic";
-	info.apiVersion = VK_API_VERSION_1_3;
+	info.apiVersion       = VK_API_VERSION_1_3;
 
-	VKInstance instance(info, {}, {}, true);
+	VK2DContext context(info, {}, {}, true);
 
 	//Window window(720, 480, "test", Window::Resizable | Window::Visible);
 

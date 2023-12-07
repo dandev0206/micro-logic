@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../core/vk2d_def.h"
 #include <cstdint>
-#include "../vk2d_config.h"
 
 VK2D_BEGIN
 
