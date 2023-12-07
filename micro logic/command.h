@@ -57,6 +57,7 @@ private:
 public:
 	enum SelectType {   // selections aabb
 		Clear,          //     x       x
+		SelectAll,      //     x       x
 		SelectAppend,	//     o       o
 		SelectInvert,	//     x       o
 		Unselect		//     o       o

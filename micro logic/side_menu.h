@@ -14,6 +14,7 @@ public:
 	virtual void upperMenu() {};
 	virtual void onBegin() {};
 	virtual void onClose() {};
+	virtual bool isBusy() const { return false; }
 
 protected:
 	void menuButtonImpl(const vk2d::Texture& texture, const vk2d::Rect& rect, const vk2d::vec2& size);

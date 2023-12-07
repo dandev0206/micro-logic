@@ -281,6 +281,11 @@ void SelectingSideMenu::upperMenu()
 	}
 }
 
+bool SelectingSideMenu::isBusy() const
+{
+	return is_working;
+}
+
 void SelectingSideMenu::beginWork()
 {
 	auto& ws = getCurrentWindowSheet();

@@ -35,6 +35,7 @@ public:
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
 	void upperMenu() override;
+	bool isBusy() const override;
 
 	virtual void beginWork();
 	virtual void endWork();

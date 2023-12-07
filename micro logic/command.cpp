@@ -92,6 +92,7 @@ std::string Command_Add::what() const
 void Command_Select::onPush(SchematicSheet& sheet)
 {
 	assert(type != Clear || selections.empty() && aabb == AABB());
+	assert(type != SelectAll || selections.empty() && aabb == AABB());
 	assert(type != SelectAppend || !selections.empty() && aabb != AABB());
 	assert(type != SelectInvert || selections.empty() && aabb != AABB());
 	assert(type != Unselect || !selections.empty() && aabb != AABB());
@@ -115,6 +116,23 @@ void Command_Select::redo(SchematicSheet& sheet)
 
 		sortSelections();
 		sheet.selections.clear();
+	} else if (type == SelectAll) {
+		aabb = sheet.bvh.begin()->first;
+
+		for (auto iter = sheet.bvh.begin(); iter != sheet.bvh.end(); ++iter) {
+			auto& elem = static_cast<CircuitElement&>(*iter->second);
+
+			bool already_selected = elem.isSelected();
+			auto flags            = elem.select();
+
+			selections.emplace_back(elem.id, flags);
+			aabb = aabb.union_of(iter->first);
+
+			if (!already_selected)
+				sheet.selections.emplace_back(iter);
+		}
+
+		sortSelections();
 	} else if (type == SelectAppend) {
 		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
@@ -180,6 +198,23 @@ void Command_Select::undo(SchematicSheet& sheet)
 		});
 
 		selections.clear();
+	} else if (type == SelectAll) {
+		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
+			auto& elem = static_cast<CircuitElement&>(*iter->second);
+
+			if (auto selection = findSelection(elem.id)) {
+				elem.unselect(selection->second);
+
+				if (!elem.isSelected()) {
+					auto item = std::find(sheet.selections.begin(), sheet.selections.end(), iter);
+					sheet.selections.erase(item);
+				}
+			}
+
+			BVH_CONTINUE;
+		});
+
+		selections.clear();
 	} else if (type == SelectAppend) {
 		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
@@ -234,6 +269,8 @@ std::string Command_Select::what() const
 	switch (type) {
 	case Clear:
 		return "Clear Select";
+	case SelectAll:
+		return "Select All";
 	case SelectAppend: 
 		return "Select " + std::to_string(selections.size()) + " item(s)";
 	case SelectInvert:

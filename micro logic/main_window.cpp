@@ -261,6 +261,15 @@ void MainWindow::eventProc(const vk2d::Event& e)
 		bool alt  = vk2d::Keyboard::isKeyPressed(Key::LAlt);
 
 		switch (e.keyboard.key) {
+		case Key::A:
+			if (ctrl && !shft && !alt && curr_window_sheet) {
+				if (curr_window_sheet->sheet->empty()) break;
+
+				auto cmd  = std::make_unique<Command_Select>();
+				cmd->type = Command_Select::SelectAll;
+				curr_window_sheet->pushCommand(std::move(cmd));
+			}
+			break;
 		case Key::X:
 			if (ctrl && !shft && !alt && curr_window_sheet)
 				curr_window_sheet->cutSelectedToClipboard();
@@ -1117,7 +1126,7 @@ bool MainWindow::isUndoable()
 
 void MainWindow::beginClipboardPaste()
 {
-	if (!vk2d::Clipboard::available()) return;
+	if (curr_menu->isBusy() || !vk2d::Clipboard::available()) return;
 
 	std::stringstream ss(Base64::decode(vk2d::Clipboard::getString()));
 
@@ -1273,6 +1282,24 @@ void MainWindow::showMainMenus()
 			ImGui::SameLine();
 			if (ImGui::MenuItem("Paste", "Ctrl+V", false, has_ws))
 				beginClipboardPaste();
+
+			ImGui::Separator();
+
+			bool all_enable = has_ws && !curr_window_sheet->sheet->empty();
+			ImGui::SetCursorPosX(spacing);
+			if (ImGui::MenuItem("Select All", nullptr, false, all_enable)) {
+				auto cmd  = std::make_unique<Command_Select>();
+				cmd->type = Command_Select::SelectAll;
+				curr_window_sheet->pushCommand(std::move(cmd));
+			}
+
+			bool clear_enable = has_ws && !curr_window_sheet->sheet->selections.empty();
+			ImGui::SetCursorPosX(spacing);
+			if (ImGui::MenuItem("Clear Select", nullptr, false, clear_enable)) {
+				auto cmd  = std::make_unique<Command_Select>();
+				cmd->type = Command_Select::Clear;
+				curr_window_sheet->pushCommand(std::move(cmd));
+			}
 
 			ImGui::EndMenu();
 		}

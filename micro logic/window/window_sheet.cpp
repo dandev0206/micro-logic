@@ -103,37 +103,12 @@ void Window_Sheet::EventProc(const vk2d::Event& e, float dt)
 {
 	using vk2d::Event;
 	using vk2d::Mouse;
-	using vk2d::Key;
 
 	if (!focussed) return;
 
 	auto& main_window = MainWindow::get();
 
 	switch (e.type) {
-	case Event::KeyPressed: {
-		switch (e.keyboard.key) {
-		case Key::X:
-			if (e.keyboard.ctrl)
-				cutSelectedToClipboard();
-			break;
-		case Key::C:
-			if (e.keyboard.ctrl)
-				copySelectedToClipboard();
-			break;
-		case Key::V:
-			if (e.keyboard.ctrl)
-				pasteFromClipboard();
-			break;
-		case Key::Z:
-			if (e.keyboard.ctrl && isUndoable())
-				undo();
-			break;
-		case Key::Y:
-			if (e.keyboard.ctrl && isRedoable())
-				redo();
-			break;
-		}
-	} break;
 	case Event::MouseMoved: {
 		if (!main_window.curr_menu && Mouse::isPressed(Mouse::Left)) {
 			auto delta       = e.mouseMove.delta;
