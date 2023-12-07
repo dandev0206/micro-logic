@@ -15,13 +15,13 @@ public:
 
 	RenderOptions   options;
 
-	vk2d::Transform transform;
-	vk::Viewport    viewport;
-	vk::Rect2D      scissor;
+	Transform    transform;
+	vk::Viewport viewport;
+	vk::Rect2D   scissor;
 
-	vk2d::Transform default_transform;
-	vk::Viewport    defualt_viewport;
-	vk::Rect2D      defualt_scissor;
+	Transform    default_transform;
+	vk::Viewport defualt_viewport;
+	vk::Rect2D   defualt_scissor;
 };
 
 VK2D_END

@@ -3,6 +3,8 @@
 #include "vk2d/graphics/vertex_buffer.h"
 #include <tinyxml2.h>
 
+static const float scailing = 4.f;
+
 static vec2 parse_vec2(const tinyxml2::XMLElement* element, const char* name)
 {
 	auto* str = element->Attribute(name);
@@ -55,20 +57,26 @@ void CircuitElementLoader::loadExtents(tinyxml2::XMLElement* root)
 	for (; elem; elem = elem->NextSiblingElement("LogicGate")) {
 		auto extent = getExtent(elem);
 		extents.emplace_back(scale_rect(extent, 1.f / DEFAULT_GRID_SIZE));
-		texture_coords.emplace_back(0, (uRect)extent);
+
+		extent.setPosition(scailing * extent.getPosition());
+		extent.setSize(scailing * extent.getSize());
+		texture_coords.emplace_back(0, (iRect)extent);
 	}
 
 	elem = root->FirstChildElement("LogicUnit");
 	for (; elem; elem = elem->NextSiblingElement("LogicUnit")) {
 		auto extent = getExtent(elem);
 		extents.emplace_back(scale_rect(extent, 1.f / DEFAULT_GRID_SIZE));
-		texture_coords.emplace_back(0, (uRect)extent);
+
+		extent.setPosition(scailing * extent.getPosition());
+		extent.setSize(scailing * extent.getSize());
+		texture_coords.emplace_back(0, (iRect)extent);
 	}
 }
 
 void CircuitElementLoader::calculatePacking()
 {
-	const uvec2 max_texture_extent(2000, 2000);
+	const uvec2 max_texture_extent(5000, 5000);
 
 	uint32_t max_height = 0;
 	uint32_t extent_idx = 0;
@@ -95,7 +103,7 @@ void CircuitElementLoader::calculatePacking()
 				break;
 			}
 
-			texture_coords[extent_idx].first  = texture_id;
+			texture_coords[extent_idx].first = texture_id;
 			texture_coords[extent_idx].second.setPosition(cursor);
 
 			cursor.x  += extent.width + padding;
@@ -123,9 +131,7 @@ void CircuitElementLoader::loadElements(tinyxml2::XMLElement* root)
 		renderTexture(elem->FirstChildElement("Appearance")->FirstChildElement(), id++);
 
 	for (auto& data : texture_datas) {
-		auto& builder = data.builder;
-
-		data.texture.draw(builder.getDrawList());
+		data.texture.draw(data.drawlist);
 		data.texture.display();
 
 		data.image_mask = data.texture.getTexture().getImage();
@@ -148,28 +154,47 @@ void CircuitElementLoader::loadElements(tinyxml2::XMLElement* root)
 
 void CircuitElementLoader::renderTexture(tinyxml2::XMLElement* drawings, uint64_t id)
 {
-	auto& builder     = texture_datas[texture_coords[id].first].builder;
+	auto& drawlist    = texture_datas[texture_coords[id].first].drawlist;
 	auto texture_pos  = (vec2)texture_coords[id].second.getPosition();
 	auto texture_size = (vec2)texture_coords[id].second.getSize();
-	auto translate    = texture_pos - DEFAULT_GRID_SIZE * extents[id].getPosition();
+	auto translate    = texture_pos - scailing * DEFAULT_GRID_SIZE * extents[id].getPosition();
 
 	vk2d::TextStyle style;
 	style.font = font;
 
 	for (; drawings; drawings = drawings->NextSiblingElement()) {
-		if (!std::strcmp(drawings->Name(), "Rect")) {
-			auto size   = parse_vec2(drawings, "size");
-			auto pos    = parse_vec2(drawings, "pos");
-			auto origin = parse_vec2(drawings, "origin");
+		auto shape = to_lower(drawings->Name());
+
+		if (shape == "rect") {
+			auto size   = scailing * parse_vec2(drawings, "size");
+			auto pos    = scailing * parse_vec2(drawings, "pos");
+			auto origin = scailing * parse_vec2(drawings, "origin");
 			auto color  = parse_color(drawings, "col");
 
-			builder.addRect(pos + translate - origin, size, color);
-		} else if (!std::strcmp(drawings->Name(), "Text")) {
+			drawlist.addFilledRect(pos + translate - origin, size, color);
+		} else if (shape == "triangle") {
+			auto p0    = scailing * parse_vec2(drawings, "p0");
+			auto p1    = scailing * parse_vec2(drawings, "p1");
+			auto p2    = scailing * parse_vec2(drawings, "p2");
+			auto color = parse_color(drawings, "col");
+
+			drawlist.addFilledTriangle(p0, p1, p2, color);
+		} else if (shape == "circlefan") {
+			auto pos    = scailing * parse_vec2(drawings, "pos");
+			auto origin = scailing * parse_vec2(drawings, "origin");
+			auto radius = scailing * drawings->FloatAttribute("radius");
+			auto t_min  = drawings->FloatAttribute("t_min") * 3.1415926535f / 180.f;
+			auto t_max  = drawings->FloatAttribute("t_max") * 3.1415926535f / 180.f;
+			auto color  = parse_color(drawings, "col");
+
+			drawlist.addFilledCircleFan(pos + translate - origin, radius, t_min, t_max, color);
+		} else if (shape == "text") {
 			std::string text = drawings->GetText();
-			vec2 pos         = parse_vec2(drawings, "pos");
-			style.size       = drawings->IntAttribute("size");
+			vec2 pos         = scailing * parse_vec2(drawings, "pos");
+			style.size       = scailing * drawings->IntAttribute("size");
 			style.align      = parse_vec2(drawings, "align");
-			builder.addText(text, pos + translate, style);
+
+			drawlist.addText(text, pos + translate, style);
 		}
 	}
 }

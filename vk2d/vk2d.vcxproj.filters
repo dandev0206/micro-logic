@@ -126,6 +126,12 @@
     <ClInclude Include="include\vk2d\core\vk2d_context_impl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\vk2d\graphics\text_style.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\vk2d\graphics\draw_command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\window.cpp">
@@ -183,6 +189,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\vk2d_context.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\draw_command.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -144,7 +144,9 @@
     <ClInclude Include="include\vk2d\core\include_vulkan.h" />
     <ClInclude Include="include\vk2d\graphics\buffer.h" />
     <ClInclude Include="include\vk2d\graphics\drawable.h" />
+    <ClInclude Include="include\vk2d\graphics\draw_command.h" />
     <ClInclude Include="include\vk2d\graphics\draw_list.h" />
+    <ClInclude Include="include\vk2d\graphics\text_style.h" />
     <ClInclude Include="include\vk2d\graphics\vertex_builder.h" />
     <ClInclude Include="include\vk2d\system\font.h" />
     <ClInclude Include="include\vk2d\graphics\render_texture.h" />
@@ -178,6 +180,7 @@
     <ClInclude Include="thirdparty\stb\stb_image_write.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\draw_command.cpp" />
     <ClCompile Include="src\draw_list.cpp" />
     <ClCompile Include="src\vertex_builder.cpp" />
     <ClCompile Include="src\buffer.cpp" />

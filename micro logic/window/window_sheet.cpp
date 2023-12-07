@@ -80,6 +80,9 @@ void Window_Sheet::showUI()
 
 	if (main_window.settings.view.grid)
 		showGrid();
+	else
+		draw_list[0].clear();
+
 	if (main_window.settings.debug.show_bvh)
 		showBVH();
 
@@ -402,23 +405,22 @@ void Window_Sheet::showGrid()
 {
 	if (window_updated || update_grid) {
 		auto& settings = MainWindow::get().settings;
-		auto& cmd = draw_list[0];
+		draw_list[0].clear();
+		draw_list.setNextCommand(0);
 
 		auto plane_rect = toPlane(window_rect);
 
 		float min_x = floor(plane_rect.left);
 		float min_y = floor(plane_rect.top);
 		float max_x = ceil(plane_rect.left + plane_rect.width);
-		float max_y = ceil(plane_rect.top + plane_rect.height);	
-
-		cmd.clear();
+		float max_y = ceil(plane_rect.top + plane_rect.height);
 
 		if (settings.view.grid_axis) {
 			float width = settings.view.grid_axis_width / sheet->grid_pixel_size / 2;
 			auto color  = settings.view.grid_axis_color;
 
-			cmd.addLine(vec2(min_x, 0.f), vec2(max_x, 0.f), width, color);
-			cmd.addLine(vec2(0.f, min_y), vec2(0.f, max_y), width, color);
+			draw_list.addLine(vec2(min_x, 0.f), vec2(max_x, 0.f), width, color);
+			draw_list.addLine(vec2(0.f, min_y), vec2(0.f, max_y), width, color);
 		}
 
 		if (settings.view.grid_style == GridStyle::dot) {
@@ -428,10 +430,10 @@ void Window_Sheet::showGrid()
 			auto color  = settings.view.grid_color;
 
 			for (float y = min_y; y <= max_y; y += delta)
-				cmd.addLine(vec2(min_x, y), vec2(max_x, y), width, color);
+				draw_list.addLine(vec2(min_x, y), vec2(max_x, y), width, color);
 
 			for (float x = min_x; x < max_x; x += delta)
-				cmd.addLine(vec2(x, min_y), vec2(x, max_y), width, color);
+				draw_list.addLine(vec2(x, min_y), vec2(x, max_y), width, color);
 		}
 
 		update_grid = false;
@@ -461,7 +463,7 @@ void Window_Sheet::showBVH()
 		Rect rect  = aabb;
 		auto color = colors[std::min(level, 11u)];
 		
-		cmd.addRect(rect.getPosition(), rect.getSize(), 1 / DEFAULT_GRID_SIZE, color);
+		draw_list.addRect(rect.getPosition(), rect.getSize(), 1 / DEFAULT_GRID_SIZE, color);
 		return true;
 	});
 }

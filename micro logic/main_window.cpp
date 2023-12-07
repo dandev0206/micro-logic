@@ -237,7 +237,7 @@ void MainWindow::loop() {
 		ImGui::VK2D::RenderViewports(window);
 	}
 
-	//vk2d::TextureView view(textures[3]);
+	//vk2d::TextureView view(textures[2]);
 	//view.setPosition(100, 100);
 	//window.draw(view);
 

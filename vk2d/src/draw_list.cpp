@@ -1,299 +1,265 @@
-#define _USE_MATH_DEFINES
-
 #include "../include/vk2d/graphics/draw_list.h"
 
-#include "../include/vk2d/graphics/render_target.h"
-#include "../include/vk2d/graphics/render_states.h"
-#include "../include/vk2d/core/vk2d_context_impl.h"
-#include <glm/gtx/rotate_vector.hpp>
-#include <math.h>
+#include "../include/vk2d/system/font.h"
 
 VK2D_BEGIN
 
-DrawCommand::DrawCommand() :
-	update_buffers(true)
+static void add_hline(DrawCommand& cmd, float lineLength, float lineTop, const Color& color, float offset, float thickness, float outlineThickness = 0)
+{
+	auto idx = cmd.reservePrims(4, 6);
+
+	float top    = std::floor(lineTop + offset - (thickness / 2) + 0.5f);
+	float bottom = top + std::floor(thickness + 0.5f);
+
+	cmd.vertices.emplace_back(Vertex(vec2(-outlineThickness, top - outlineThickness), color, vec2(1, 1)));
+	cmd.vertices.emplace_back(Vertex(vec2(lineLength + outlineThickness, top - outlineThickness), color, vec2(1, 1)));
+	cmd.vertices.emplace_back(Vertex(vec2(-outlineThickness, bottom + outlineThickness), color, vec2(1, 1)));
+	cmd.vertices.emplace_back(Vertex(vec2(lineLength + outlineThickness, bottom + outlineThickness), color, vec2(1, 1)));
+
+	cmd.indices.emplace_back(idx + 0);
+	cmd.indices.emplace_back(idx + 1);
+	cmd.indices.emplace_back(idx + 2);
+	cmd.indices.emplace_back(idx + 1);
+	cmd.indices.emplace_back(idx + 2);
+	cmd.indices.emplace_back(idx + 3);
+}
+
+static Rect add_glyph_quad(DrawCommand& cmd, const vec2& pos, const Color& color, const Glyph& glyph, float italicShear)
+{
+	auto idx = cmd.reservePrims(4, 6);
+
+	float padding = 1.0;
+
+	vec2 p0 = pos + glyph.bounds.getPosition() - vec2(padding);
+	vec2 p1 = p0 + glyph.bounds.getSize() + 2.f * vec2(padding);
+
+	float u0 = static_cast<float>(glyph.textureRect.left) - padding;
+	float v0 = static_cast<float>(glyph.textureRect.top) - padding;
+	float u1 = static_cast<float>(glyph.textureRect.left + glyph.textureRect.width) + padding;
+	float v1 = static_cast<float>(glyph.textureRect.top + glyph.textureRect.height) + padding; 
+
+	cmd.vertices.emplace_back(Vertex(vec2(p0.x - italicShear * p0.y, p0.y), color, vec2(u0, v0)));
+	cmd.vertices.emplace_back(Vertex(vec2(p1.x - italicShear * p0.y, p0.y), color, vec2(u1, v0)));
+	cmd.vertices.emplace_back(Vertex(vec2(p0.x - italicShear * p1.y, p1.y), color, vec2(u0, v1)));
+	cmd.vertices.emplace_back(Vertex(vec2(p1.x - italicShear * p1.y, p1.y), color, vec2(u1, v1)));
+
+	cmd.indices.emplace_back(idx + 0);
+	cmd.indices.emplace_back(idx + 1);
+	cmd.indices.emplace_back(idx + 2);
+	cmd.indices.emplace_back(idx + 1);
+	cmd.indices.emplace_back(idx + 2);
+	cmd.indices.emplace_back(idx + 3);
+
+	return { p0, p1 - p0 };
+}
+
+DrawList::DrawList() :
+	curr_cmd(-1)
 {}
 
-void DrawCommand::addLine(const vec2& p0, const vec2& p1, float width, const Color& col)
+void DrawList::addLine(const vec2& p0, const vec2& p1, float width, const Color& col)
 {
-	uint32_t index = reservePrims(4, 6);
-
-	vec2 normal = glm::normalize(p1 - p0);
-	normal = vec2(-normal.y, normal.x);
-
-	vertices.emplace_back(p0 + normal * width, col);
-	vertices.emplace_back(p0 - normal * width, col);
-	vertices.emplace_back(p1 + normal * width, col);
-	vertices.emplace_back(p1 - normal * width, col);
-
-	indices.emplace_back(index + 0);
-	indices.emplace_back(index + 2);
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + 2);
-	indices.emplace_back(index + 3);
+	getCommand().addLine(p0, p1, width, col);
 }
 
-void DrawCommand::addRect(const vec2& pos, const vec2& size, float width, const Color& col)
+void DrawList::addTriangle(const vec2& p0, const vec2& p1, const vec2& p2, float width, const Color& col)
 {
-	vec2 p0 = pos;
-	vec2 p1 = pos + vec2(size.x, 0.f);
-	vec2 p2 = pos + vec2(0.f, size.y);
-	vec2 p3 = pos + size;
-
-	addLine(p0, p1, width, col);
-	addLine(p1, p3, width, col);
-	addLine(p3, p2, width, col);
-	addLine(p2, p0, width, col);
+	getCommand().addTriangle(p0, p1, p2, width, col);
 }
 
-void DrawCommand::addFilledRect(const vec2& pos, const vec2& size, const Color& col)
+void DrawList::addFilledTriangle(const vec2& p0, const vec2& p1, const vec2& p2, const Color& col)
 {
-	uint32_t index = reservePrims(4, 6);
-
-	vertices.emplace_back(pos, col);
-	vertices.emplace_back(pos + vec2(size.x, 0.f), col);
-	vertices.emplace_back(pos + vec2(0.f, size.y), col);
-	vertices.emplace_back(pos + size, col);
-
-	indices.emplace_back(index + 0);
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + 2);
-	indices.emplace_back(index + 0);
-	indices.emplace_back(index + 2);
-	indices.emplace_back(index + 3);
+	getCommand().addFilledTriangle(p0, p1, p2, col);
 }
 
-void DrawCommand::addFilledRect(const vec2& pos, const vec2& size, const Color& col, const Rect& uv_rect)
+void DrawList::addRect(const vec2& pos, const vec2& size, float width, const Color& col)
 {
-	uint32_t index = reservePrims(4, 6);
-
-	vec2 uv_pos  = uv_rect.getPosition();
-	vec2 uv_size = uv_rect.getSize();
-
-	vertices.emplace_back(pos, col, uv_pos);
-	vertices.emplace_back(pos + vec2(size.x, 0.f), col, uv_pos + vec2(uv_size.x, 0.f));
-	vertices.emplace_back(pos + vec2(0.f, size.y), col, uv_pos + vec2(0.f, uv_size.y));
-	vertices.emplace_back(pos + size, col, uv_pos + uv_size);
-
-	indices.emplace_back(index + 0);
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + 2);
-	indices.emplace_back(index + 0);
-	indices.emplace_back(index + 2);
-	indices.emplace_back(index + 3);
+	getCommand().addRect(pos, size, width, col);
 }
 
-void DrawCommand::addCircle(const vec2& pos, float radius, float width, const Color& col, uint32_t seg_count)
+void DrawList::addFilledRect(const vec2& pos, const vec2& size, const Color& col)
 {
-	addEllipse(pos, vec2(radius), width, col, seg_count);
+	getCommand().addFilledRect(pos, size, col);
 }
 
-void DrawCommand::addFilledCircle(const vec2& pos, float radius, const Color& col, uint32_t seg_count)
+void DrawList::addFilledRect(const vec2& pos, const vec2& size, const Color& col, const Rect& uv_rect)
 {
-	addFilledEllipse(pos, vec2(radius), col, seg_count);
+	getCommand().addFilledRect(pos, size, col, uv_rect);
 }
 
-void DrawCommand::addEllipse(const vec2& pos, const vec2& size, float width, const Color& col, uint32_t seg_count)
+void DrawList::addCircle(const vec2& pos, float radius, float width, const Color& col, uint32_t seg_count)
 {
-	vec2 p0 = pos + vec2(size.x, 0);
-
-	for (uint32_t i = 1; i <= seg_count; ++i) {
-		float theta = 2.f * (float)M_PI * i / seg_count;
-		vec2 p1 = pos + vec2(cosf(theta), sinf(theta));
-
-		addLine(p0, p1, width, col);
-		p0 = p1;
-	}
+	getCommand().addEllipse(pos, vec2(radius), width, col, seg_count);
 }
 
-void DrawCommand::addFilledEllipse(const vec2& pos, const vec2& size, const Color& col, uint32_t seg_count)
+void DrawList::addFilledCircle(const vec2& pos, float radius, const Color& col, uint32_t seg_count)
 {
-	uint32_t index = reservePrims(seg_count + 1, 3 * seg_count);
-
-	vertices.emplace_back(pos, col);
-	for (uint32_t i = 0; i < seg_count; ++i) {
-		float theta = 2.f * (float)M_PI * i / seg_count;
-		vertices.emplace_back(pos + size * vec2(cosf(theta), sinf(theta)), col);
-	}
-
-	for (uint32_t i = 1; i < seg_count; ++i) {
-		indices.emplace_back(index);
-		indices.emplace_back(index + i);
-		indices.emplace_back(index + i + 1);
-	}
-	indices.emplace_back(index);
-	indices.emplace_back(index + seg_count);
-	indices.emplace_back(index + 1);
+	getCommand().addFilledEllipse(pos, vec2(radius), col, seg_count);
 }
 
-void DrawCommand::addFilledCapsule(const vec2& p0, const vec2& p1, float width, const Color& col, uint32_t seg_count)
+void DrawList::addFilledCircleFan(const vec2& pos, float radius, float theta_min, float theta_max, const Color& col, uint32_t seg_count)
 {
-	uint32_t index = reservePrims(seg_count + 4, 3 * seg_count + 6);
-
-	vec2 normal = (width / 2.f) * glm::normalize(p1 - p0);
-	normal = vec2(-normal.y, normal.x);
-
-	vertices.emplace_back(p0, col);
-	for (uint32_t i = 0; i <= seg_count / 2; ++i) {
-		float theta = 2.f * (float)M_PI * i / seg_count;
-		vertices.emplace_back(p0 + glm::rotate(normal, theta), col);
-	}
-
-	vertices.emplace_back(p1, col);
-	for (uint32_t i = seg_count / 2; i <= seg_count; ++i) {
-		float theta = 2.f * (float)M_PI * i / seg_count;
-		vertices.emplace_back(p1 + glm::rotate(normal, theta), col);
-	}
-
-	for (uint32_t i = 1; i <= seg_count / 2; ++i) {
-		indices.emplace_back(index);
-		indices.emplace_back(index + i);
-		indices.emplace_back(index + i + 1);
-	}
-
-	uint32_t off = seg_count / 2 + 2;
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + seg_count + 3);
-	indices.emplace_back(index + off + 1);
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + off - 1);
-	indices.emplace_back(index + off + 1);
-
-	for (uint32_t i = 1; i <= seg_count / 2; ++i) {
-		indices.emplace_back(index + off);
-		indices.emplace_back(index + off + i);
-		indices.emplace_back(index + off + i + 1);
-	}
+	getCommand().addFilledCircleFan(pos, radius, theta_min, theta_max, col, seg_count);
 }
 
-void DrawCommand::addFilledHalfCapsule(const vec2& p, const vec2& mid, float width, const Color& col_p, Color& col_mid, uint32_t seg_count)
+void DrawList::addEllipse(const vec2& pos, const vec2& size, float width, const Color& col, uint32_t seg_count)
 {
-	uint32_t index = reservePrims(seg_count / 2 + 4, 3 * seg_count / 2 + 6);
-
-	vec2 normal = (width / 2.f) * glm::normalize(mid - p);
-	normal = vec2(-normal.y, normal.x);
-
-	vertices.emplace_back(p, col_p);
-	for (uint32_t i = 0; i <= seg_count / 2; ++i) {
-		float theta = 2.f * (float)M_PI * i / seg_count;
-		vertices.emplace_back(p + glm::rotate(normal, theta), col_p);
-	}
-	vertices.emplace_back(mid + normal, col_mid);
-	vertices.emplace_back(mid - normal, col_mid);
-
-	for (uint32_t i = 1; i <= seg_count / 2; ++i) {
-		indices.emplace_back(index);
-		indices.emplace_back(index + i);
-		indices.emplace_back(index + i + 1);
-	}
-
-	uint32_t off = seg_count / 2 + 2;
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + off);
-	indices.emplace_back(index + off + 1);
-	indices.emplace_back(index + 1);
-	indices.emplace_back(index + off - 1);
-	indices.emplace_back(index + off + 1);
+	getCommand().addEllipse(pos, size, width, col, seg_count);
 }
 
-void DrawCommand::clear(bool clear_options)
+void DrawList::addFilledEllipse(const vec2& pos, const vec2& size, const Color& col, uint32_t seg_count)
 {
-	vertices.clear();
-	indices.clear();
+	getCommand().addFilledEllipse(pos, size, col, seg_count);
+}
 
-	if (clear_options) 
-		options.clear();
+void DrawList::addFilledCapsule(const vec2& p0, const vec2& p1, float width, const Color& col, uint32_t seg_count)
+{
+	getCommand().addFilledCapsule(p0, p1, width, col, seg_count);
+}
+
+void DrawList::addFilledHalfCapsule(const vec2& p, const vec2& mid, float width, const Color& col_p, Color& col_mid, uint32_t seg_count)
+{
+	getCommand().addFilledHalfCapsule(p, mid, width, col_p, col_mid, seg_count);
+}
+
+void DrawList::addText(const std::string& text, const vec2& pos, const TextStyle& style)
+{
+	VK2D_ASSERT(style.font && "null font");
+
+	if (text.empty()) return;
+
+	auto& cmd = getCommand(&style.font->getTexture(style.size));
+	cmd.update_buffers = true; // TODO: use reservePrims()
+
+	const auto& font   = *style.font;
+	uint32_t font_size = style.size;
+
+	bool  is_bold           = style.bold;
+	bool  is_underlined     = style.under_line;
+	bool  is_strike_through = style.strike_through;
+	float italic_shear      = style.italic ? 0.209f : 0.f; // 12 degrees in radians
+
+	Rect xBounds = font.getGlyph(L'x', font_size, is_bold).bounds;
+
+	float strike_through_offset = (xBounds.top + xBounds.height / 2.f);
+	float whitespace_width      = font.getGlyph(L' ', font_size, is_bold).advance;
+	float letter_spacing        = (whitespace_width / 3.f) * (style.letter_spacing - 1.f);
+	whitespace_width           += letter_spacing;
+	float line_spacing          = font.getLineSpacing(font_size) * style.line_spacing;
 	
-	update_buffers = true;
-}
+	float underline_offset    = font.getUnderlinePosition(font_size);
+	float underline_thickness = font.getUnderlineThickness(font_size);
 
-void DrawCommand::draw(RenderTarget& target, RenderStates& states) const
-{
-	if (vertices.empty()) return;
+	float x     = pos.x;
+	float y     = pos.y;
+	float min_x = pos.x + (float)style.size;
+	float min_y = pos.y + (float)style.size;
+	float max_x = pos.x;
+	float max_y = pos.y;
 
-	auto& inst      = VK2DContext::get();
-	auto cmd_buffer = target.getCommandBuffer();
+	size_t prev_vert_size = cmd.vertices.size();
+	uint32_t prev_char    = 0;
 
-	//prepare buffers
-	if (update_buffers) {
-		vertex_buffer.resize(vertices.size());
-		vertex_buffer.update(vertices.data(), vertices.size());
+	for (std::size_t i = 0; i < text.size(); ++i) {
+		int32_t curChar = text[i];
 
-		if (!indices.empty()) {
-			index_buffer.resize(indices.size() * sizeof(uint32_t), vk::BufferUsageFlagBits::eIndexBuffer);
-			index_buffer.update(indices.data(), indices.size() * sizeof(uint32_t));
-			options.buffer = &index_buffer;
+		if (curChar == L'\r') continue;
+
+		x += font.getKerning(prev_char, curChar, font_size, is_bold);
+
+		if (is_underlined && (curChar == L'\n' && prev_char != L'\n')) {
+			add_hline(cmd, x, y, style.color, underline_offset, underline_thickness);
+
+			if (style.outline_thickness != 0)
+				add_hline(cmd, x, y, style.outline_color, underline_offset, underline_thickness, style.outline_thickness);
 		}
-		update_buffers = false;
+
+		if (is_strike_through && (curChar == L'\n' && prev_char != L'\n')) {
+			add_hline(cmd, x, y, style.color, strike_through_offset, underline_thickness);
+
+			if (style.outline_thickness != 0)
+				add_hline(cmd, x, y, style.outline_color, strike_through_offset, underline_thickness, style.outline_thickness);
+		}
+
+		prev_char = curChar;
+
+		if ((curChar == L' ') || (curChar == L'\n') || (curChar == L'\t')) {
+			min_x = std::min(min_x, x);
+			min_y = std::min(min_y, y);
+
+			switch (curChar) {
+			case L' ':  x += whitespace_width;     break;
+			case L'\t': x += whitespace_width * 4; break;
+			case L'\n': y += line_spacing; x = 0;  break;
+			}
+
+			max_x = std::max(max_x, x);
+			max_y = std::max(max_y, y);
+
+			continue;
+		}
+
+		if (style.outline_thickness != 0) {
+			const Glyph& glyph = font.getGlyph(curChar, font_size, is_bold, style.outline_thickness);
+			add_glyph_quad(cmd, vec2(x, y), style.outline_color, glyph, italic_shear);
+		}
+
+		const Glyph& glyph = font.getGlyph(curChar, font_size, is_bold);
+
+		auto rect = add_glyph_quad(cmd, vec2(x, y), style.color, glyph, italic_shear);
+
+		min_x = std::min(min_x, rect.left);
+		max_x = std::max(max_x, rect.left + rect.width);
+		min_y = std::min(min_y, rect.top);
+		max_y = std::max(max_y, rect.top + rect.height);
+
+		x += glyph.advance + letter_spacing;
 	}
 
-	states.reset(options);
+	vec2 align((min_x - max_x) * style.align.x, (max_y - min_y) * style.align.y);
 
-	const Pipeline* pipeline = nullptr;
-
-	if (options.pipeline.has_value())
-		pipeline = options.pipeline.value();
-	else if (options.texture.has_value())
-		pipeline = &inst.basic_pipelines[0];
-	else
-		pipeline = &inst.basic_pipelines[1];
-
-	cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->pipeline);
-	cmd_buffer.setPrimitiveTopology(vk::PrimitiveTopology::eTriangleList);
-
-	states.bindTVS(cmd_buffer, *pipeline->pipeline_layout);
-
-	vk::DeviceSize offset = 0;
-	cmd_buffer.bindVertexBuffers(0, 1, &vertex_buffer.getBuffer(), &offset);
-
-	if (states.options.texture.has_value()) {
-		auto desc_set = states.options.texture.value()->getDescriptorSet();
-		cmd_buffer.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
-			*pipeline->pipeline_layout,
-			0, 1, &desc_set, 0, nullptr);
-
-		vec2 texture_size = (vec2)states.options.texture.value()->size();
-
-		cmd_buffer.pushConstants(
-			*pipeline->pipeline_layout,
-			vk::ShaderStageFlagBits::eVertex,
-			sizeof(Transform),
-			sizeof(vec2),
-			&texture_size);
-	}
-
-	if (states.options.buffer.has_value()) { // has index buffer
-		auto& index_buffer = *states.options.buffer.value();
-		cmd_buffer.bindIndexBuffer(index_buffer.getBuffer(), 0, vk::IndexType::eUint32);
-		cmd_buffer.drawIndexed(index_buffer.size() / sizeof(uint32_t), 1, 0, 0, 0);
-	} else {
-		cmd_buffer.draw((uint32_t)vertex_buffer.size(), 1, 0, 0);
+	if (align != vec2(0.f)) {
+		for (size_t i = prev_vert_size; i < cmd.vertices.size(); ++i)
+			cmd.vertices[i].pos += align;
 	}
 }
 
-uint32_t DrawCommand::reservePrims(uint32_t vertex_count, uint32_t index_count)
+void DrawList::setNextCommand(size_t idx)
 {
-	update_buffers = true;
+	VK2D_ASSERT(idx < commands.size());
 
-	vertices.reserve(vertices.size() + vertex_count);
-	indices.reserve(indices.size() + index_count);
-
-	return (uint32_t)vertices.size();
+	curr_cmd = idx;
 }
 
-DrawList::DrawList()
-{}
+DrawCommand& DrawList::getCommand(const Texture* texture)
+{
+	if (commands.empty()) {
+		auto& cmd = commands.emplace_back();
+		if (texture)
+			cmd.options.texture = texture;
+		
+		curr_cmd = 0;
+	} else if (texture && commands[curr_cmd].options.texture != texture) {
+		auto& cmd = commands.emplace_back();
+		if (texture)
+			cmd.options.texture = texture;
+
+		curr_cmd = commands.size() - 1;
+	}
+
+	return commands[curr_cmd];
+}
 
 void DrawList::resize(size_t size)
 {
 	commands.resize(size);
+	curr_cmd = size - 1;
 }
 
 void DrawList::clear()
 {
 	commands.clear();
+	curr_cmd = -1;
 }
 
 const DrawCommand& DrawList::operator[](size_t idx) const 

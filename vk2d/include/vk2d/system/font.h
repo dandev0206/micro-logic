@@ -1,29 +1,10 @@
 #pragma once
 
 #include "../graphics/texture.h"
+#include "../graphics/text_style.h"
 #include "glyph.h"
 
 VK2D_BEGIN
-
-class Font;
-
-struct TextStyle {
-	TextStyle() VK2D_NOTHROW;
-
-	const Font* font;
-	uint32_t    size;
-	Color       color;
-	Color       background_color;
-	vec2        align;
-	float       letter_spacing;
-	float       line_spacing;
-	float       outline_thickness;
-	Color       outline_color;
-	bool        bold;
-	bool        under_line;
-	bool        strike_through;
-	bool        italic;
-};
 
 class Font {
 public:

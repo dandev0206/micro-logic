@@ -1,13 +1,17 @@
 #pragma once
 
-#include "draw_command.h"
-#include "text_style.h"
+#include "../core/vertex.h"
+#include "render_options.h"
+#include "vertex_buffer.h"
+#include "buffer.h"
+#include "drawable.h"
 
 VK2D_BEGIN
 
-class DrawList : public Drawable {
+class DrawCommand : public Drawable {
+	friend class DrawList;
 public:
-	DrawList();
+	DrawCommand();
 
 	void addLine(const vec2& p0, const vec2& p1, float width, const Color& col);
 	void addTriangle(const vec2& p0, const vec2& p1, const vec2& p2, float width, const Color& col);
@@ -22,25 +26,22 @@ public:
 	void addFilledEllipse(const vec2& pos, const vec2& size, const Color& col, uint32_t seg_count = 36);
 	void addFilledCapsule(const vec2& p0, const vec2& p1, float width, const Color& col, uint32_t seg_count = 36);
 	void addFilledHalfCapsule(const vec2& p, const vec2& mid, float width, const Color& col_p, Color& col_mid, uint32_t seg_count = 36);
-	void addText(const std::string& text, const vec2& pos, const TextStyle& style);
 
-	void setNextCommand(size_t idx);
-	DrawCommand& getCommand(const Texture* texture = nullptr);
+	uint32_t reservePrims(uint32_t vertex_count, uint32_t index_count);
 
-	void resize(size_t size);
-	void clear();
+	void clear(bool clear_options = true);
 
-	const DrawCommand& operator[](size_t idx) const;
-	DrawCommand& operator[](size_t idx);
+	std::vector<Vertex>   vertices;
+	std::vector<uint32_t> indices;
+	mutable RenderOptions options;
 
 private:
 	void draw(RenderTarget& target, RenderStates& states) const;
 
-public:
-	mutable std::vector<DrawCommand> commands;
-
 private:
-	int64_t curr_cmd;
+	mutable VertexBuffer vertex_buffer;
+	mutable Buffer       index_buffer;
+	mutable bool         update_buffers;
 };
 
 VK2D_END

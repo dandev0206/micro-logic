@@ -660,6 +660,19 @@ void Menu_Copy::onBegin()
 
 void Menu_Copy::onClose()
 {
+	if (!is_working) return;
+
+	auto& ws = getCurrentWindowSheet();
+
+	for (auto iter : ws.sheet->selections) {
+		auto& elem = static_cast<CircuitElement&>(*iter->second);
+
+		elem.style |= CircuitElement::Selected;
+	}
+
+	elements.clear();
+
+	SelectingSideMenu::endWork();
 }
 
 void Menu_Copy::beginWork()

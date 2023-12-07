@@ -226,8 +226,6 @@ void LogicGate::draw(vk2d::DrawList& draw_list) const
 {
 	if (style & Style::Hidden) return;
 
-	auto& cmd = draw_list[shared->texture_id + TEXTURE_ID_OFF];
-
 	auto rect = shared->extent;
 	auto texture_rect = shared->texture_coord;
 	auto x = rect.width;
@@ -252,16 +250,26 @@ void LogicGate::draw(vk2d::DrawList& draw_list) const
 	vk2d::Vertex v2(p2, color, { texture_rect.left + tx, texture_rect.top + ty });
 	vk2d::Vertex v3(p3, color, { texture_rect.left, texture_rect.top + ty });
 
-	cmd.vertices.emplace_back(v0);
-	cmd.vertices.emplace_back(v1);
-	cmd.vertices.emplace_back(v2);
-	cmd.vertices.emplace_back(v0);
-	cmd.vertices.emplace_back(v2);
-	cmd.vertices.emplace_back(v3);
+	{
+		auto& cmd = draw_list[shared->texture_id + TEXTURE_ID_OFF];
+
+		auto idx = cmd.reservePrims(4, 6);
+
+		cmd.vertices.emplace_back(v0);
+		cmd.vertices.emplace_back(v1);
+		cmd.vertices.emplace_back(v2);
+		cmd.vertices.emplace_back(v3);
+
+		cmd.indices.emplace_back(idx + 0);
+		cmd.indices.emplace_back(idx + 1);
+		cmd.indices.emplace_back(idx + 2);
+		cmd.indices.emplace_back(idx + 0);
+		cmd.indices.emplace_back(idx + 3);
+		cmd.indices.emplace_back(idx + 2);
+	}
 
 	if (!(style & (Style::Hovered | Style::Selected | Style::Blocked))) return;
 
-	auto& mask_cmd  = draw_list[shared->mask_id + TEXTURE_ID_OFF];
 	vk2d::Color mask_color;
 
 	if (style & Style::Blocked) {
@@ -270,19 +278,30 @@ void LogicGate::draw(vk2d::DrawList& draw_list) const
 		mask_color = vk2d::Color(255, 255, 255, 32);
 	} else if (style & Style::Selected) {
 		mask_color = vk2d::Color(0, 255, 0, 16);
-	} 
+	}
 
 	v0.color = mask_color;
 	v1.color = mask_color;
 	v2.color = mask_color;
 	v3.color = mask_color;
 
-	mask_cmd.vertices.emplace_back(v0);
-	mask_cmd.vertices.emplace_back(v1);
-	mask_cmd.vertices.emplace_back(v2);
-	mask_cmd.vertices.emplace_back(v0);
-	mask_cmd.vertices.emplace_back(v2);
-	mask_cmd.vertices.emplace_back(v3);
+	{
+		auto& cmd = draw_list[shared->mask_id + TEXTURE_ID_OFF];
+
+		auto idx = cmd.reservePrims(4, 6);
+
+		cmd.vertices.emplace_back(v0);
+		cmd.vertices.emplace_back(v1);
+		cmd.vertices.emplace_back(v2);
+		cmd.vertices.emplace_back(v3);
+
+		cmd.indices.emplace_back(idx + 0);
+		cmd.indices.emplace_back(idx + 1);
+		cmd.indices.emplace_back(idx + 2);
+		cmd.indices.emplace_back(idx + 0);
+		cmd.indices.emplace_back(idx + 3);
+		cmd.indices.emplace_back(idx + 2);
+	}
 }
 
 CircuitElement::Type LogicGate::getType() const

@@ -6,6 +6,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 VK2D_BEGIN
 

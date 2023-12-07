@@ -1,20 +1,20 @@
 <CircuitElements grid_pixel_size="30">
 	<LogicGate name="7400">
 		<Pins>
-			<Pin type="" io="input" pinout="1" pos="-3, 1"></Pin>
-			<Pin type="" io="input" pinout="2" pos="-2, 1"></Pin>
-			<Pin type="" io="output" pinout="3" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="4" pos="0, 1"></Pin>
-			<Pin type="" io="input" pinout="5" pos="1, 1"></Pin>
-			<Pin type="" io="output" pinout="6" pos="2, 1"></Pin>
-			<Pin type="" io="GND" pinout="7" pos="3, 1"></Pin>
-			<Pin type="" io="output" pinout="8" pos="3, -1"></Pin>
-			<Pin type="" io="input" pinout="9" pos="2, -1"></Pin>
-			<Pin type="" io="input" pinout="10" pos="1, -1"></Pin>
-			<Pin type="" io="output" pinout="11" pos="0, -1"></Pin>
-			<Pin type="" io="input" pinout="12" pos="-1, -1"></Pin>
-			<Pin type="" io="input" pinout="13" pos="-2, -1"></Pin>
-			<Pin type="" io="VCC" pinout="14" pos="-3, -1"></Pin>
+			<Pin name="1A" io="input" pinout="1" pos="-3, 1"></Pin>
+			<Pin name="1B" io="input" pinout="2" pos="-2, 1"></Pin>
+			<Pin name="1Y" io="output" pinout="3" pos="-1, 1"></Pin>
+			<Pin name="2A" io="input" pinout="4" pos="0, 1"></Pin>
+			<Pin name="2B" io="input" pinout="5" pos="1, 1"></Pin>
+			<Pin name="2Y" io="output" pinout="6" pos="2, 1"></Pin>
+			<Pin name="GND" io="GND" pinout="7" pos="3, 1"></Pin>
+			<Pin name="3Y" io="output" pinout="8" pos="3, -1"></Pin>
+			<Pin name="3A" io="input" pinout="9" pos="2, -1"></Pin>
+			<Pin name="3B" io="input" pinout="10" pos="1, -1"></Pin>
+			<Pin name="4Y" io="output" pinout="11" pos="0, -1"></Pin>
+			<Pin name="4A" io="input" pinout="12" pos="-1, -1"></Pin>
+			<Pin name="4B" io="input" pinout="13" pos="-2, -1"></Pin>
+			<Pin name="VCC" io="VCC" pinout="14" pos="-3, -1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -35,16 +35,17 @@
 			<Rect size="17, 23" pos="60, 30" origin="8, 15" col="195, 195, 195"></Rect>
 			<Rect size="17, 23" pos="90, 30" origin="8, 15" col="195, 195, 195"></Rect>
 			<Rect size="203, 50" pos="0, 0" origin="102, 25" col="55, 55, 55"></Rect>
+			<CircleFan pos="-102, 0" origin="0, 0" radius="10" t_min="270" t_max="450" col="30, 30, 30"></CircleFan>
 			<Text size="30" pos="0, 0" align="0.5, 0.5">7400</Text>
 		</Appearance>
 	</LogicGate>
 	<LogicGate name="Full Adder">
 		<Pins>
-			<Pin type="" io="output" pinout="1" pos="-1, -1"></Pin>
-			<Pin type="" io="output" pinout="2" pos="1, -1"></Pin>
-			<Pin type="" io="input" pinout="3" pos="-1, 1"></Pin>
-			<Pin type="" io="input" pinout="4" pos="0, 1"></Pin>
-			<Pin type="" io="input" pinout="5" pos="1, 1"></Pin>
+			<Pin name="S" io="output" pinout="1" pos="-1, -1"></Pin>
+			<Pin name="Cout" io="output" pinout="2" pos="1, -1"></Pin>
+			<Pin name="Cin" io="input" pinout="3" pos="-1, 1"></Pin>
+			<Pin name="B" io="input" pinout="4" pos="0, 1"></Pin>
+			<Pin name="B" io="input" pinout="5" pos="1, 1"></Pin>
 		</Pins>
 		<Logic>
 			$2 = $0 and $1
@@ -57,6 +58,28 @@
 			<Rect size="17, 23" pos="30, 30" origin="8, 15" col="195, 195, 195"></Rect>
 			<Rect size="87, 40" pos="0, 0" origin="43, 20" col="55, 55, 55"></Rect>
 			<Text size="30" pos="0, 0" align="0.5, 0.5">FA</Text>
+		</Appearance>
+	</LogicGate>
+	<LogicGate name="D Flip-Flop">
+		<Pins>
+			<Pin type="" io="output" pinout="1" pos="-1, -1"></Pin>
+			<Pin type="" io="output" pinout="2" pos="1, -1"></Pin>
+			<Pin type="" io="input" pinout="3" pos="-1, 1"></Pin>
+			<Pin type="" io="input" pinout="4" pos="0, 1"></Pin>
+		</Pins>
+		<Logic>
+			$2 = $0 and $1
+		</Logic>
+		<Appearance>
+			<Rect size="23, 17" pos="-30, -30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="23, 17" pos="-30, 30" origin="8, 8" col="195, 195, 195"></Rect>
+			<Rect size="23, 17" pos="30, -30" origin="15, 8" col="195, 195, 195"></Rect>
+			<Rect size="23, 17" pos="30, 30" origin="15, 8" col="195, 195, 195"></Rect>
+			<Rect size="40, 87" pos="0, 0" origin="20, 43" col="55, 55, 55"></Rect>
+			<Triangle p0="-20, 22" p1="-20, 38" p2="-10, 30" col="195, 195, 195"></Triangle>
+			<Text size="20" pos="-15, -30" align="0.5, 0.5">D</Text>
+			<Text size="20" pos="15, -30" align="0.5, 0.5">Q</Text>
+			<Text size="20" pos="15, 30" align="0.5, 0.5">Q</Text>
 		</Appearance>
 	</LogicGate>
 	<LogicGate name="minimal 2-input AND">

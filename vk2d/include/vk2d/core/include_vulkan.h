@@ -12,4 +12,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#ifdef _DEBUG
 #define VK2D_CHECK(expression) VK2D_ASSERT((expression) == vk::Result::eSuccess)
+#else
+#define VK2D_CHECK(expression) (void)expression
+#endif
