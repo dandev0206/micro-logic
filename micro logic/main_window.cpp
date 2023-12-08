@@ -18,6 +18,7 @@
 #include "util/convert_string.h"
 #include "dialogs.h"
 #include "circuit_element_loader.h"
+#include "commands.h"
 #include "base64.h"
 #include "icons.h"
 #include "micro_logic_config.h"
@@ -1285,7 +1286,7 @@ void MainWindow::showMainMenus()
 
 			ImGui::Separator();
 
-			bool all_enable = has_ws && curr_window_sheet->sheet->bvh.size() != curr_window_sheet->sheet->selections.size();
+			bool all_enable = has_ws && !curr_window_sheet->sheet->empty();
 			ImGui::SetCursorPosX(spacing);
 			if (ImGui::MenuItem("Select All", nullptr, false, all_enable)) {
 				auto cmd  = std::make_unique<Command_Select>();

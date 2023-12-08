@@ -139,7 +139,7 @@
   <ItemGroup>
     <ClCompile Include="circuit_element.cpp" />
     <ClCompile Include="circuit_element_loader.cpp" />
-    <ClCompile Include="command.cpp" />
+    <ClCompile Include="commands.cpp" />
     <ClCompile Include="dialogs.cpp" />
     <ClCompile Include="gui\custom_titlebar.cpp" />
     <ClCompile Include="gui\dialog.cpp" />
@@ -156,6 +156,7 @@
     </ClCompile>
     <ClCompile Include="gui\resizing_loop.cpp" />
     <ClCompile Include="schematic_sheet.cpp" />
+    <ClInclude Include="commands.h" />
     <ClInclude Include="platform\system_dialog.h" />
     <ClInclude Include="net.h" />
     <ClInclude Include="util\convert_string.h" />

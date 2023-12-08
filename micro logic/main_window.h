@@ -1,9 +1,5 @@
 #pragma once
 
-#include <vk2d/system/window.h>
-#include <vk2d/graphics/texture.h>
-#include <vk2d/system/font.h>
-#include <chrono>
 #include "gui/custom_titlebar.h"
 #include "gui/resizing_loop.h"
 #include "window/window_sheet.h"
@@ -11,6 +7,10 @@
 #include "window/window_history.h"
 #include "window/window_explorer.h"
 #include "side_menu.h"
+#include <vk2d/system/window.h>
+#include <vk2d/graphics/texture.h>
+#include <vk2d/system/font.h>
+#include <chrono>
 
 class MainWindow : public ResizingLoop {
 private:

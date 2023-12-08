@@ -54,7 +54,7 @@
     <ClCompile Include="schematic_sheet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="command.cpp">
+    <ClCompile Include="commands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="window\window_history.cpp">
@@ -180,6 +180,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="net.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="commands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

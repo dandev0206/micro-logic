@@ -4,7 +4,7 @@
 
 #include "gui/imgui_custom.h"
 #include "main_window.h"
-#include "command.h"
+#include "commands.h"
 #include "math_utils.h"
 #include "micro_logic_config.h"
 

@@ -55,20 +55,22 @@ bool CommandGroup::empty() const
 
 void Command_Add::onPush(SchematicSheet& sheet)
 {
+	assert(elements.size() > 0);
+
+	item_count = elements.size();
 }
 
 void Command_Add::redo(SchematicSheet& sheet)
 {
-	assert(elements.size());
-	assert(!refs.capacity());
+	assert(elements.size() > 0);
+	assert(refs.capacity() == 0);
 
-	refs.reserve(elements.size());
+	refs.reserve(item_count);
 
 	for (auto& elem : elements) {
 		auto aabb = elem->getAABB();
 
 		elem->id = sheet.id_counter++;
-
 		refs.emplace_back(sheet.bvh.insert(aabb, std::move(elem)));
 	}
 
@@ -78,18 +80,25 @@ void Command_Add::redo(SchematicSheet& sheet)
 
 void Command_Add::undo(SchematicSheet& sheet)
 {
-	assert(!elements.capacity());
-	assert(refs.size());
+	assert(elements.capacity() == 0);
+	assert(refs.size() > 0);
 
-	sheet.id_counter -= (uint32_t)refs.size();
+	elements.reserve(item_count);
 
-	for (auto iter : refs)
+	sheet.id_counter -= (uint32_t)item_count;
+
+	for (auto iter : refs) {
+		elements.emplace_back(std::move(iter->second));
 		sheet.bvh.erase(iter);
+	}
+
+	refs.clear();
+	refs.shrink_to_fit();
 }
 
 std::string Command_Add::what() const
 {
-	return "Add " + std::to_string(elements.size()) + " Item(s)";
+	return "Add " + std::to_string(item_count) + " Item(s)";
 }
 
 void Command_Select::onPush(SchematicSheet& sheet)
