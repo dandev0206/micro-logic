@@ -59,29 +59,32 @@ void Command_Add::onPush(SchematicSheet& sheet)
 
 void Command_Add::redo(SchematicSheet& sheet)
 {
-	for (auto& elem : elements)
-		sheet.bvh.insert(elem->getAABB(), elem->clone(sheet.id_counter++));
+	assert(elements.size());
+	assert(!refs.capacity());
+
+	refs.reserve(elements.size());
+
+	for (auto& elem : elements) {
+		auto aabb = elem->getAABB();
+
+		elem->id = sheet.id_counter++;
+
+		refs.emplace_back(sheet.bvh.insert(aabb, std::move(elem)));
+	}
+
+	elements.clear();
+	elements.shrink_to_fit();
 }
 
 void Command_Add::undo(SchematicSheet& sheet)
 {
-	sheet.id_counter -= (uint32_t)elements.size();
+	assert(!elements.capacity());
+	assert(refs.size());
 
-	auto id = sheet.id_counter;
+	sheet.id_counter -= (uint32_t)refs.size();
 
-	for (auto& elem : elements) {
-		sheet.bvh.query(elem->getAABB(), [&](auto iter) {
-			auto& [aabb, elem] = *iter;
-
-			if (elem->id == id) {
-				sheet.bvh.erase(iter);
-				BVH_BREAK;
-			} else {
-				BVH_CONTINUE;
-			}
-		});
-		id++;
-	}
+	for (auto iter : refs)
+		sheet.bvh.erase(iter);
 }
 
 std::string Command_Add::what() const

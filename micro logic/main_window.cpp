@@ -1285,7 +1285,7 @@ void MainWindow::showMainMenus()
 
 			ImGui::Separator();
 
-			bool all_enable = has_ws && !curr_window_sheet->sheet->empty();
+			bool all_enable = has_ws && curr_window_sheet->sheet->bvh.size() != curr_window_sheet->sheet->selections.size();
 			ImGui::SetCursorPosX(spacing);
 			if (ImGui::MenuItem("Select All", nullptr, false, all_enable)) {
 				auto cmd  = std::make_unique<Command_Select>();

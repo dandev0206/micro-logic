@@ -37,6 +37,11 @@ public:
 	std::string what() const override;
 
 	std::vector<std::unique_ptr<CircuitElement>> elements;
+
+private:
+	using bvh_iterator_t = typename BVH<std::unique_ptr<CircuitElement>>::iterator;
+
+	std::vector<bvh_iterator_t> refs;
 };
 
 class Command_Select : public Command {
