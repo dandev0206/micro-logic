@@ -234,18 +234,22 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 
 			if (is_working) {
 				if (!blocked) endWork();
-			} else if (isSelectedElement(pos)) {
+			} else if (isSelectedElement(pos) && !ctrl && !shft) {
 				ws.clearHoverList();
 				beginWork();
-			} else {
-				if (selectElement(point_to_AABB(pos)) && !ctrl && !shft) {
-					ws.clearHoverList();
-					beginWork();
-				}
+			} else if (selectElement(point_to_AABB(pos)) && !ctrl && !shft) {
+				ws.clearHoverList();
+				beginWork();
 			}
 		} else if (e.mouseButton.button == Mouse::Right) {
-			dir      = rotate_cw(dir);
-			last_dir = Direction::Right;
+			if (!is_working) break;
+
+			if (Mouse::isPressed(Mouse::Left)) {
+				cancelWork();
+			} else {
+				dir = rotate_cw(dir);
+				last_dir = Direction::Right;
+			}
 		}
 	} break;
 	case Event::MouseReleased: {
@@ -281,6 +285,12 @@ void SelectingSideMenu::upperMenu()
 	}
 }
 
+void SelectingSideMenu::onClose()
+{
+	if (is_working)
+		cancelWork();
+}
+
 bool SelectingSideMenu::isBusy() const
 {
 	return is_working;
@@ -291,6 +301,7 @@ void SelectingSideMenu::beginWork()
 	auto& ws = getCurrentWindowSheet();
 
 	is_working = true;
+	blocked    = false;
 	start_pos  = ws.getClampedCursorPlanePos();
 	last_pos   = start_pos;
 	dir        = Direction::Up;
@@ -299,6 +310,12 @@ void SelectingSideMenu::beginWork()
 
 void SelectingSideMenu::endWork()
 {
+	is_working = false;
+}
+
+void SelectingSideMenu::cancelWork()
+{
+	ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
 	is_working = false;
 }
 
@@ -335,7 +352,6 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 		}
 
 		cmd0->type = Command_Select::SelectAppend;
-		cmd0->aabb = aabb;
 
 		ws.getBVH().query(aabb, [&](auto iter) {
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
@@ -344,7 +360,7 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 
 			if (!flags) BVH_CONTINUE;
 
-			cmd0->selections.emplace_back(elem.id, flags);
+			cmd0->selections.emplace_back(&elem, flags);
 			selectConnectedWire(elem, *cmd0);
 
 			BVH_CONTINUE;
@@ -357,7 +373,6 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 		}
 	} else if (ctrl) { // select append
 		cmd0->type = Command_Select::SelectAppend;
-		cmd0->aabb = aabb;
 
 		ws.getBVH().query(aabb, [&](auto iter) {
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
@@ -366,7 +381,7 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 			flags  &= ~elem.getCurrSelectFlags();
 
 			if (flags)
-				cmd0->selections.emplace_back(elem.id, flags);
+				cmd0->selections.emplace_back(&elem, flags);
 
 			BVH_CONTINUE;
 		});
@@ -469,6 +484,22 @@ void Menu_Select::endWork()
 	}
 
 	SelectingSideMenu::endWork();
+}
+
+void Menu_Select::cancelWork()
+{
+	auto& ws = getCurrentWindowSheet();
+
+	for (auto iter : ws.sheet->selections) {
+		auto& elem = *iter->second;
+
+		elem.transform({}, last_pos, invert_dir(dir));
+		elem.transform(start_pos - last_pos, {}, Direction::Up);
+
+		elem.style &= ~CircuitElement::Blocked;
+	}
+
+	SelectingSideMenu::cancelWork();
 }
 
 void Menu_Select::loopWork()
@@ -663,23 +694,6 @@ void Menu_Copy::onBegin()
 		beginWork();
 }
 
-void Menu_Copy::onClose()
-{
-	if (!is_working) return;
-
-	auto& ws = getCurrentWindowSheet();
-
-	for (auto iter : ws.sheet->selections) {
-		auto& elem = static_cast<CircuitElement&>(*iter->second);
-
-		elem.style |= CircuitElement::Selected;
-	}
-
-	elements.clear();
-
-	SelectingSideMenu::endWork();
-}
-
 void Menu_Copy::beginWork()
 {
 	auto& ws = getCurrentWindowSheet();
@@ -737,6 +751,23 @@ void Menu_Copy::endWork()
 		auto& main_window = MainWindow::get();
 		main_window.setCurrentSideMenu(prev_menu);
 	}
+}
+
+void Menu_Copy::cancelWork()
+{
+	if (!is_working) return;
+
+	auto& ws = getCurrentWindowSheet();
+
+	for (auto iter : ws.sheet->selections) {
+		auto& elem = static_cast<CircuitElement&>(*iter->second);
+
+		elem.style |= CircuitElement::Selected;
+	}
+
+	elements.clear();
+
+	SelectingSideMenu::cancelWork();
 }
 
 void Menu_Copy::loopWork()
@@ -837,24 +868,6 @@ void Menu_Cut::onBegin()
 		beginWork();
 }
 
-void Menu_Cut::onClose()
-{
-	if (!is_working) return;
-
-	auto& ws = getCurrentWindowSheet();
-
-	for (auto iter : ws.sheet->selections) {
-		auto& elem = static_cast<CircuitElement&>(*iter->second);
-
-		elem.style |= CircuitElement::Selected;
-		elem.style &= ~CircuitElement::Cut;
-	}
-
-	elements.clear();
-
-	SelectingSideMenu::endWork();
-}
-
 void Menu_Cut::beginWork()
 {
 	auto& ws = getCurrentWindowSheet();
@@ -910,6 +923,22 @@ void Menu_Cut::endWork()
 		auto& main_window = MainWindow::get();
 		main_window.setCurrentSideMenu(prev_menu);
 	}
+}
+
+void Menu_Cut::cancelWork()
+{
+	auto& ws = getCurrentWindowSheet();
+
+	for (auto iter : ws.sheet->selections) {
+		auto& elem = static_cast<CircuitElement&>(*iter->second);
+
+		elem.style |= CircuitElement::Selected;
+		elem.style &= ~CircuitElement::Cut;
+	}
+
+	elements.clear();
+
+	SelectingSideMenu::cancelWork();
 }
 
 void Menu_Cut::loopWork()

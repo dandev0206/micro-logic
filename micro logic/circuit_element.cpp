@@ -122,8 +122,12 @@ RigidElement::RigidElement() :
 
 void RigidElement::transform(const vec2& delta, const vec2& origin, Direction rotation)
 {
-	pos = rotate_vector(pos + delta - origin, dir) + origin;
-	dir = rotate_dir(dir, rotation);
+	if (rotation != Direction::Up) {
+		pos = rotate_vector(pos + delta - origin, rotation) + origin;
+		dir = rotate_dir(dir, rotation);
+	} else {
+		pos += delta;
+	}
 }
 
 uint32_t RigidElement::getSelectFlagsMask() const
@@ -143,20 +147,22 @@ uint32_t RigidElement::getCurrSelectFlags() const
 
 uint32_t RigidElement::select(uint32_t flags)
 {
-	uint32_t delta = (bool)flags != isSelected();
+	if ((flags & 1) && !(style & Style::Selected)) {
+		style |= Style::Selected;
+		return 1;
+	}
 
-	if (flags) style |= Style::Selected;
-
-	return delta;
+	return 0;
 }
 
 uint32_t RigidElement::unselect(uint32_t flags)
 {
-	uint32_t delta = flags != (style == Style::None);
+	if ((flags & 1) && (style & Style::Selected)) {
+		style &= ~Style::Selected;
+		return 1;
+	}
 
-	if (flags) style &= ~Style::Selected;
-
-	return delta;
+	return 0;
 }
 
 void RigidElement::setHover(uint32_t flags)

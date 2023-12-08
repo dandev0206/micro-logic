@@ -1201,7 +1201,7 @@ void MainWindow::showMainMenus()
 					saveProjectAs();
 			} else {
 				if (ImGui::MenuItem("Save Project###MenuItemSaveProject"))
-					saveProject();
+					saveAll();
 			}
 
 			if (curr_window_sheet) {

@@ -38,8 +38,8 @@ private:
 
 class Command_Select : public Command {
 public:
-	using selection_t  = std::pair<int32_t, uint32_t>;
-	using selections_t = std::vector<std::pair<int32_t, uint32_t>>;
+	using selection_t  = std::pair<CircuitElement*, uint32_t>;
+	using selections_t = std::vector<selection_t>;
 
 	void onPush(SchematicSheet& sheet) override;
 	void redo(SchematicSheet& sheet) override;
@@ -47,17 +47,13 @@ public:
 	std::string what() const override;
 	bool isModifying() const override;
 
-private:
-	void sortSelections();
-	selection_t* findSelection(int32_t id);
-
 public:
 	enum SelectType {   // selections aabb
 		Clear,          //     x       x
 		SelectAll,      //     x       x
-		SelectAppend,	//     o       o
+		SelectAppend,	//     o       x
 		SelectInvert,	//     x       o
-		Unselect		//     o       o
+		Unselect		//     o       x
 	};
 
 	SelectType   type;
@@ -92,7 +88,11 @@ public:
 	Direction dir;
 
 private:
-	size_t item_count;
+	using bvh_iterator_t = typename BVH<std::unique_ptr<CircuitElement>>::iterator;
+
+	std::vector<std::unique_ptr<CircuitElement>> elements;
+	std::vector<bvh_iterator_t>                  refs;
+	size_t                                       item_count;
 };
 
 class Command_Cut : public Command {
@@ -107,7 +107,8 @@ public:
 	Direction dir;
 
 private:
-	size_t item_count;
+	std::vector<std::unique_ptr<CircuitElement>> elements;
+	size_t                                       item_count;
 };
 
 class Command_Delete : public Command {

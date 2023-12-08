@@ -35,10 +35,12 @@ public:
 	void loop() override;
 	void eventProc(const vk2d::Event& e, float dt) override;
 	void upperMenu() override;
+	void onClose() override;
 	bool isBusy() const override;
 
 	virtual void beginWork();
 	virtual void endWork();
+	virtual void cancelWork();
 	virtual void loopWork() = 0;
 
 	bool isSelectedElement(const vec2& pos);
@@ -46,12 +48,12 @@ public:
 	void deleteSelectedElement();
 	bool checkBlocked(const AABB& elem) const;
 
-	bool                        is_working;
-	bool                        blocked;
-	vec2                        start_pos;
-	vec2                        last_pos;
-	Direction                   dir;
-	Direction                   last_dir;
+	bool      is_working;
+	bool      blocked;
+	vec2      start_pos;
+	vec2      last_pos;
+	Direction dir;
+	Direction last_dir;
 };
 
 class Menu_Select : public SelectingSideMenu
@@ -65,6 +67,7 @@ public:
 
 	void beginWork() override;
 	void endWork() override;
+	void cancelWork() override;
 	void loopWork() override;
 };
 
@@ -117,10 +120,10 @@ public:
 	void loop() override;
 	void menuButton() override;
 	void onBegin() override;
-	void onClose() override;
 
 	void beginWork() override;
 	void endWork() override;
+	void cancelWork() override;
 	void loopWork() override;
 
 	void beginPaste(bool from_clipboard);
@@ -139,10 +142,10 @@ public:
 	void loop() override;
 	void menuButton() override;
 	void onBegin() override;
-	void onClose() override;
 
 	void beginWork() override;
 	void endWork() override;
+	void cancelWork() override;
 	void loopWork() override;
 
 	void beginPaste(bool from_clipboard);

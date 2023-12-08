@@ -7,6 +7,7 @@
 #include "../main_window.h"
 #include "../base64.h"
 #include "../micro_logic_config.h"
+#include "../commands.h"
 
 static inline ImRect to_ImRect(const vk2d::Rect& rect)
 {
@@ -351,7 +352,7 @@ void Window_Sheet::deleteElement(const AABB& aabb)
 	getBVH().query(aabb, [&](auto iter) {
 		auto& elem = static_cast<CircuitElement&>(*iter->second);
 
-		cmd0->selections.emplace_back(elem.id, UINT_MAX);
+		cmd0->selections.emplace_back(&elem, UINT_MAX);
 		return false;
 	});
 

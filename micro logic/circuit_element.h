@@ -1,14 +1,13 @@
 #pragma once
 
 #include "direction.h"
+#include "serialize.h"
 #include "aabb.hpp"
-
+#include "bvh.hpp"
+#include "net.h"
 #include <vk2d/graphics/image.h>
 #include <vk2d/graphics/draw_list.h>
 #include <memory>
-#include "net.h"
-
-#include "serialize.h"
 
 #define DEFAULT_GRID_SIZE (30.f)
 
@@ -51,7 +50,8 @@ public:
 		Net
 	};
 
-	using style_t = uint32_t;
+	using bvh_iterator_t = typename BVH<std::unique_ptr<CircuitElement>>::iterator;
+	using StyleFlags     = uint32_t;
 
 	static std::unique_ptr<CircuitElement> create(std::istream& is);
 
@@ -78,8 +78,9 @@ public:
 	bool isSelected() const;
 	bool isWireBased() const;
 
-	int32_t id;
-	style_t style;
+	int32_t        id;
+	StyleFlags     style;
+	bvh_iterator_t iter;
 };
 
 class RigidElement abstract : public CircuitElement {

@@ -1,4 +1,6 @@
-#include "command.h"
+#include "commands.h"
+
+using bvh_iterator_t = typename BVH<std::unique_ptr<CircuitElement>>::iterator;
 
 static AABB transform_AABB(const AABB& aabb, const vec2& delta, const vec2& origin, Direction dir) {
 	AABB result;
@@ -67,11 +69,14 @@ void Command_Add::redo(SchematicSheet& sheet)
 
 	refs.reserve(item_count);
 
-	for (auto& elem : elements) {
-		auto aabb = elem->getAABB();
+	for (auto& elem_ptr : elements) {
+		auto& elem = *elem_ptr;
+		
+		auto iter = sheet.bvh.insert(elem.getAABB(), std::move(elem_ptr));
+		elem.id   = sheet.id_counter++;
+		elem.iter = iter;
 
-		elem->id = sheet.id_counter++;
-		refs.emplace_back(sheet.bvh.insert(aabb, std::move(elem)));
+		refs.emplace_back(iter);
 	}
 
 	elements.clear();
@@ -105,64 +110,60 @@ void Command_Select::onPush(SchematicSheet& sheet)
 {
 	assert(type != Clear || selections.empty() && aabb == AABB());
 	assert(type != SelectAll || selections.empty() && aabb == AABB());
-	assert(type != SelectAppend || !selections.empty() && aabb != AABB());
+	assert(type != SelectAppend || !selections.empty() && aabb == AABB());
 	assert(type != SelectInvert || selections.empty() && aabb != AABB());
-	assert(type != Unselect || !selections.empty() && aabb != AABB());
-	
-	sortSelections();
+	assert(type != Unselect || !selections.empty() && aabb == AABB());
 }
 
 void Command_Select::redo(SchematicSheet& sheet)
 {
 	if (type == Clear) {
-		aabb = sheet.selections.front()->second->getAABB();
+		assert(sheet.selections.size() > 0);
+		assert(selections.capacity() == 0);
 
 		for (auto iter : sheet.selections) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+			auto& elem = *iter->second;
 			
-			auto flags = elem.unselect();
-
-			selections.emplace_back(elem.id, flags);
-			aabb = aabb.union_of(elem.getAABB());
+			selections.emplace_back(&elem, elem.unselect());
 		}
 
-		sortSelections();
 		sheet.selections.clear();
 	} else if (type == SelectAll) {
-		aabb = sheet.bvh.begin()->first;
+		assert(sheet.selections.size() != sheet.bvh.size());
+		assert(selections.capacity() == 0);
+
+		for (auto iter : sheet.selections) {
+			auto& elem = *iter->second;
+
+			selections.emplace_back(&elem, elem.getCurrSelectFlags());
+		}
 
 		for (auto iter = sheet.bvh.begin(); iter != sheet.bvh.end(); ++iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+			auto& elem = *iter->second;
 
 			bool already_selected = elem.isSelected();
-			auto flags            = elem.select();
-
-			selections.emplace_back(elem.id, flags);
-			aabb = aabb.union_of(iter->first);
+			elem.select();
 
 			if (!already_selected)
 				sheet.selections.emplace_back(iter);
 		}
-
-		sortSelections();
 	} else if (type == SelectAppend) {
-		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
-			
-			if (auto selection = findSelection(elem.id)) {
-				bool already_selected = elem.isSelected();
-				
-				elem.select(selection->second);
+		assert(selections.size() > 0);
 
-				if (!already_selected) 
-					sheet.selections.emplace_back(iter);
-			}
+		for (auto selection : selections) {
+			auto& elem = *selection.first;
 
-			BVH_CONTINUE;
-		});
+			assert(!(elem.getCurrSelectFlags() & selection.second));
+
+			bool already_selected = elem.isSelected();
+			elem.select(selection.second);
+
+			if (!already_selected)
+				sheet.selections.emplace_back(elem.iter);
+		}
 	} else if (type == SelectInvert) {
 		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+			auto& elem = *iter->second;
 
 			auto old_flags = elem.getCurrSelectFlags();
 			elem.unselect();
@@ -179,71 +180,63 @@ void Command_Select::redo(SchematicSheet& sheet)
 			BVH_CONTINUE;
 		});
 	} else { // Unselect
-		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+		assert(selections.size() > 0);
 
-			if (auto selection = findSelection(elem.id)) {
-				elem.unselect(selection->second);
-				auto item = std::find(sheet.selections.begin(), sheet.selections.end(), iter);
+		for (auto selection : selections) {
+			auto& elem = *selection.first;
+
+			assert(!(elem.getCurrSelectFlags() & selection.second));
+
+			elem.unselect(selection.second);
+
+			if (!elem.isSelected()) {
+				auto item = std::find(sheet.selections.begin(), sheet.selections.end(), elem.iter);
 				sheet.selections.erase(item);
-				
-				BVH_BREAK;
 			}
-
-			BVH_CONTINUE;
-		});
+		}
 	}
 }
 
 void Command_Select::undo(SchematicSheet& sheet)
 {
 	if (type == Clear) {
-		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+		assert(sheet.selections.empty());
+		assert(selections.size() > 0);
 
-			if (auto selection = findSelection(elem.id)) {
-				elem.select(selection->second);
-				sheet.selections.emplace_back(iter);
-			}
-
-			BVH_CONTINUE;
-		});
+		for (auto [elem, flags] : selections) {
+			elem->select(flags);
+			sheet.selections.emplace_back(elem->iter);
+		}
 
 		selections.clear();
+		selections.shrink_to_fit();
 	} else if (type == SelectAll) {
-		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+		for (auto iter : sheet.selections) {
+			auto& elem = *iter->second;
 
-			if (auto selection = findSelection(elem.id)) {
-				elem.unselect(selection->second);
+			elem.unselect();
+		}
 
-				if (!elem.isSelected()) {
-					auto item = std::find(sheet.selections.begin(), sheet.selections.end(), iter);
-					sheet.selections.erase(item);
-				}
-			}
+		sheet.selections.clear();
 
-			BVH_CONTINUE;
-		});
+		for (auto [elem, flags] : selections) {
+			elem->select(flags);
+			sheet.selections.emplace_back(elem->iter);
+		}
 
 		selections.clear();
+		selections.shrink_to_fit();
 	} else if (type == SelectAppend) {
-		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+		for (auto selection : selections) {
+			auto& elem = *selection.first;
 
-			if (auto selection = findSelection(elem.id)) {
-				auto flag = elem.getCurrSelectFlags();
-				
-				auto delta = elem.unselect(selection->second);
+			elem.unselect(selection.second);
 
-				if (!elem.isSelected()) {
-					auto item = std::find(sheet.selections.begin(), sheet.selections.end(), iter);
-					sheet.selections.erase(item);
-				}
+			if (!elem.isSelected()) {
+				auto item = std::find(sheet.selections.begin(), sheet.selections.end(), elem.iter);
+				sheet.selections.erase(item);
 			}
-
-			BVH_CONTINUE;
-		});
+		}
 	} else if (type == SelectInvert) {
 		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
 			auto& elem = static_cast<CircuitElement&>(*iter->second);
@@ -263,16 +256,15 @@ void Command_Select::undo(SchematicSheet& sheet)
 			BVH_CONTINUE;
 		});
 	} else { // Unselect
-		sheet.bvh.query(aabb, [&](decltype(sheet.bvh)::iterator iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
+		for (auto selection : selections) {
+			auto& elem = *selection.first;
 
-			if (auto selection = findSelection(elem.id)) {
-				elem.select(selection->second);
-				sheet.selections.emplace_back(iter);
-			}
+			bool already_selected = elem.isSelected();
+			elem.select(selection.second);
 
-			BVH_CONTINUE;
-		});
+			if (!already_selected)
+				sheet.selections.emplace_back(elem.iter);
+		}
 	}
 }
 
@@ -297,24 +289,6 @@ std::string Command_Select::what() const
 bool Command_Select::isModifying() const
 {
 	return false;
-}
-
-void Command_Select::sortSelections()
-{
-	std::sort(selections.begin(), selections.end(), [](const auto& a, const auto& b) {
-		return a.first < b.first;
-	});
-}
-
-Command_Select::selection_t* Command_Select::findSelection(int32_t id)
-{
-	auto iter = std::lower_bound(selections.begin(), selections.end(), id, [](const auto& item, int32_t id) {
-		return item.first < id;
-	});
-
-	if (iter == selections.end() || iter->first != id) return nullptr;
-
-	return std::addressof(*iter);
 }
 
 void Command_Move::onPush(SchematicSheet& sheet)
@@ -355,44 +329,62 @@ void Command_Copy::onPush(SchematicSheet& sheet)
 
 void Command_Copy::redo(SchematicSheet& sheet)
 {
-	for (auto& selection : sheet.selections) {
-		auto& elem = static_cast<CircuitElement&>(*selection->second);
+	if (elements.empty()) { // initial
+		refs.reserve(item_count);
 
-		auto new_elem = elem.clone(sheet.id_counter++);
-		
-		new_elem->select();
-		new_elem->transform(delta, origin, dir);
-		new_elem->unselect();
+		for (auto selection : sheet.selections) {
+			auto new_elem = selection->second->clone();
+			auto& elem    = *new_elem;
 
-		sheet.bvh.insert(new_elem->getAABB(), std::move(new_elem));
+			elem.select();
+			elem.transform(delta, origin, dir);
+			elem.unselect();
+
+			auto iter = sheet.bvh.insert(elem.getAABB(), std::move(new_elem));
+
+			elem.id   = sheet.id_counter++;
+			elem.iter = iter;
+
+			refs.emplace_back(iter);
+		}
+	} else {
+		assert(elements.size() > 0);
+		assert(refs.capacity() == 0);
+
+		refs.reserve(item_count);
+
+		for (auto& new_elem : elements) {
+			auto& elem = *new_elem;
+
+			auto iter = sheet.bvh.insert(elem.getAABB(), std::move(new_elem));
+
+			elem.id   = sheet.id_counter++;
+			elem.iter = iter;
+
+			refs.emplace_back(iter);
+		}
+
+		elements.clear();
+		elements.shrink_to_fit();
 	}
 }
 
 void Command_Copy::undo(SchematicSheet& sheet)
 {
-	auto id = sheet.id_counter -= (uint32_t)sheet.selections.size();
+	assert(elements.capacity() == 0);
+	assert(refs.size() > 0);
 
-	for (auto& selection : sheet.selections) {
-		auto& elem = static_cast<CircuitElement&>(*selection->second);
+	elements.reserve(item_count);
 
-		auto aabb = elem.getAABB();
+	sheet.id_counter -= (uint32_t)item_count;
 
-		aabb = transform_AABB(aabb, delta, origin, dir);
-
-		auto result = sheet.bvh.query(aabb, [&](auto iter) {
-			auto& elem = static_cast<CircuitElement&>(*iter->second);
-
-			if (elem.id != id) BVH_CONTINUE;
-
-			sheet.bvh.erase(iter);
-			BVH_BREAK;
-		});
-
-		if (result != true)
-			int a = 0;
-
-		id++;
+	for (auto iter : refs) {
+		elements.emplace_back(std::move(iter->second));
+		sheet.bvh.erase(iter);
 	}
+
+	refs.clear();
+	refs.shrink_to_fit();
 }
 
 std::string Command_Copy::what() const

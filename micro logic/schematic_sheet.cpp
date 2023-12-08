@@ -38,7 +38,9 @@ void SchematicSheet::unserialize(std::istream& is)
 
 	for (size_t i = 0; i < elem_count; ++i) {
 		auto new_elem = CircuitElement::create(is);
-		bvh.insert(new_elem->getAABB(), std::move(new_elem));
+		auto& elem    = *new_elem;
+
+		elem.iter = bvh.insert(elem.getAABB(), std::move(new_elem));
 	}
 }
 
