@@ -216,18 +216,16 @@ public:
 
 private:
 	_BVH_Node<Ty>* _find_best(const AABB& aabb) {
-		std::stack<std::pair<_BVH_Node<Ty>*, float>> stack;
-		
 		auto   cost_best = aabb.union_of(root->aabb).area();
 		auto** node_best = &root;
 
-		stack.emplace(root, 0.f);
+		find_stack.emplace_back(root, 0.f);
 
-		while (!stack.empty()) {
-			auto* curr_node   = stack.top().first;
-			auto cost_inherit = stack.top().second;
+		while (!find_stack.empty()) {
+			auto* curr_node   = find_stack.back().first;
+			auto cost_inherit = find_stack.back().second;
 
-			stack.pop();
+			find_stack.pop_back();
 
 			float cost_direct = aabb.union_of(curr_node->aabb).area();
 			float cost_total  = cost_direct + cost_inherit;
@@ -243,11 +241,13 @@ private:
 
 			if (cost_lowerbound < cost_best) {
 				if (!curr_node->is_leaf()) {
-					stack.emplace(curr_node->childs[0], cost_inherit);
-					stack.emplace(curr_node->childs[1], cost_inherit);
+					find_stack.emplace_back(curr_node->childs[0], cost_inherit);
+					find_stack.emplace_back(curr_node->childs[1], cost_inherit);
 				}
 			}
 		}
+
+		find_stack.clear();
 
 		return *node_best;
 	}
@@ -530,5 +530,6 @@ private:
 	_BVH_Node<Ty>* root;
 	size_type node_size;
 
+	std::vector<std::pair<_BVH_Node<Ty>*, float>> find_stack;
 	std::vector<_BVH_Node<Ty>*> stack;
 };

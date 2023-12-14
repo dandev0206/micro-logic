@@ -378,12 +378,28 @@ uint32_t WireElement::getSelectFlags(const AABB& aabb) const
 
 	if (!code0 && !code1) 
 		return 3;
-	else if (code0 & code1) 
-		return 0;
-	else if (!code0 != !code1) 
+	if (!code0 != !code1)
 		return (!code0 << 0) | (!code1 << 1);
-	else 
-		return 3;
+	if (!(code0 & code1)) { // might intersect
+		if (is_vertical(p0, p1) && in_range(p0.x, aabb.min.x, aabb.max.x))
+			return 3;
+
+		float m = slope(p0, p1);
+
+		float y = m * (aabb.min.x - p1.x) + p1.y;
+		if (in_range(y, aabb.min.y, aabb.max.y)) return 3;
+
+		y = m * (aabb.max.x - p1.x) + p1.y;
+		if (in_range(y, aabb.min.y, aabb.max.y)) return 3;
+
+		float x = (aabb.min.y - p1.y) / m + p1.x;
+		if (in_range(x, aabb.min.x, aabb.max.x)) return 3;
+
+		x = (aabb.max.y - p1.y) / m + p1.x;
+		if (in_range(x, aabb.min.x, aabb.max.x)) return 3;
+	}
+
+	return 0;
 }
 
 uint32_t WireElement::getCurrSelectFlags() const

@@ -4,6 +4,8 @@
 #include "circuit_element.h"
 #include "bvh.hpp"
 
+class Command_Select;
+
 class Menu_Info : public SideMenu
 {
 public:
@@ -45,6 +47,7 @@ public:
 
 	bool isSelectedElement(const vec2& pos);
 	bool selectElement(const AABB& aabb);
+	void selectConnected(Command_Select& cmd, const CircuitElement& elem, uint32_t flags);
 	void deleteSelectedElement();
 	bool checkBlocked(const AABB& elem) const;
 
@@ -128,6 +131,7 @@ public:
 
 	void beginPaste(bool from_clipboard);
 	void beginClipboardPaste(std::istream& is);
+	void clearWork();
 
 	std::vector<std::unique_ptr<CircuitElement>> elements;
 	SideMenu* prev_menu;
@@ -150,6 +154,7 @@ public:
 
 	void beginPaste(bool from_clipboard);
 	void beginClipboardPaste(std::istream& is);
+	void clearWork();
 
 	std::vector<std::unique_ptr<CircuitElement>> elements;
 	SideMenu* prev_menu;

@@ -45,23 +45,6 @@ void SideMenu::menuButtonImpl(const vk2d::Texture& texture, const vk2d::Rect& re
 	}
 }
 
-void selectConnectedWire(const CircuitElement& elem, Command_Select& cmd)
-{
-	switch (elem.getType()) {
-	case CircuitElement::LogicGate:
-	case CircuitElement::LogicUnit:
-		const auto& logic_elem = static_cast<const LogicElement&>(elem);
-
-		for (const auto& layout : logic_elem.shared->pin_layouts) {
-			auto& ws = getCurrentWindowSheet();
-
-			// if (logic_elem.pins[layout.pinout - 1].net != nullptr) {
-			// 
-			// } TODO: uncomment later
-		}
-	}
-}
-
 Menu_Info::Menu_Info() :
 	SideMenu("Info")
 {}
@@ -216,9 +199,13 @@ void SelectingSideMenu::eventProc(const vk2d::Event& e, float dt)
 		case Key::Left:
 			dir = Direction::Left;
 			break;
+		case Key::Escape:
+			if (is_working)
+				cancelWork();
+			break;
 		case Key::Delete:
-			deleteSelectedElement();
-			is_working = false;
+			if (!is_working)
+				deleteSelectedElement();
 			break;
 		};
 		last_dir = rotate_dir(dir, (Direction)tmp);
@@ -361,7 +348,7 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 			if (!flags) BVH_CONTINUE;
 
 			cmd0->selections.emplace_back(&elem, flags);
-			selectConnectedWire(elem, *cmd0);
+			selectConnected(*cmd0, elem, flags);
 
 			BVH_CONTINUE;
 		});
@@ -406,6 +393,40 @@ bool SelectingSideMenu::selectElement(const AABB& aabb)
 		ws.pushCommand(std::move(cmd_group));
 	}
 	return selected;
+}
+
+void SelectingSideMenu::selectConnected(Command_Select& cmd, const CircuitElement& elem, uint32_t flags)
+{
+	return;
+
+	// TODO: complete selectConnected()
+
+//	auto& ws = getCurrentWindowSheet();
+//	
+//	auto add_to_cmd = [&](auto iter) {
+//		auto& elem = static_cast<CircuitElement&>(*iter->second);
+//
+//	};
+//
+//	switch (elem.getType()) {
+//	case CircuitElement::Wire:
+//	case CircuitElement::Net:
+//		const auto& wire = static_cast<const WireElement&>(elem);
+//
+//		if (flags & (1 << 0))
+//			ws.getBVH().query(point_to_AABB(wire.p0), add_to_cmd);
+//		if (flags & (1 << 1))
+//			ws.getBVH().query(point_to_AABB(wire.p1), add_to_cmd);
+//
+//		break;
+//	case CircuitElement::LogicGate:
+//	case CircuitElement::LogicUnit:
+//		const auto& logic_elem = static_cast<const LogicElement&>(elem);
+//
+//		for (const auto& layout : logic_elem.shared->pin_layouts) {
+//		}
+//		break;
+//	}
 }
 
 void SelectingSideMenu::deleteSelectedElement()
@@ -688,6 +709,8 @@ void Menu_Copy::menuButton()
 
 void Menu_Copy::onBegin()
 {
+	if (from_clipboard) return;
+
 	auto& ws = getCurrentWindowSheet();
 
 	if (!ws.sheet->selections.empty())
@@ -743,14 +766,8 @@ void Menu_Copy::endWork()
 		}
 	}
 
-	elements.clear();
-
 	SelectingSideMenu::endWork();
-
-	if (from_clipboard && prev_menu) {
-		auto& main_window = MainWindow::get();
-		main_window.setCurrentSideMenu(prev_menu);
-	}
+	clearWork();
 }
 
 void Menu_Copy::cancelWork()
@@ -765,9 +782,8 @@ void Menu_Copy::cancelWork()
 		elem.style |= CircuitElement::Selected;
 	}
 
-	elements.clear();
-
 	SelectingSideMenu::cancelWork();
+	clearWork();
 }
 
 void Menu_Copy::loopWork()
@@ -843,6 +859,19 @@ void Menu_Copy::beginClipboardPaste(std::istream& is)
 	}
 }
 
+void Menu_Copy::clearWork()
+{
+	elements.clear();
+
+	if (from_clipboard && prev_menu) {
+		auto& main_window = MainWindow::get();
+		main_window.setCurrentSideMenu(prev_menu);
+	}
+
+	from_clipboard = false;
+	prev_menu      = nullptr;
+}
+
 Menu_Cut::Menu_Cut() :
 	SelectingSideMenu("Cut"),
 	from_clipboard(false),
@@ -862,6 +891,8 @@ void Menu_Cut::menuButton()
 
 void Menu_Cut::onBegin()
 {
+	if (from_clipboard) return;
+
 	auto& ws = getCurrentWindowSheet();
 
 	if (!ws.sheet->selections.empty())
@@ -915,14 +946,8 @@ void Menu_Cut::endWork()
 		ws.pushCommand(std::move(cmd));
 	}
 
-	elements.clear();
-
 	SelectingSideMenu::endWork();
-
-	if (from_clipboard && prev_menu) {
-		auto& main_window = MainWindow::get();
-		main_window.setCurrentSideMenu(prev_menu);
-	}
+	clearWork();
 }
 
 void Menu_Cut::cancelWork()
@@ -936,9 +961,8 @@ void Menu_Cut::cancelWork()
 		elem.style &= ~CircuitElement::Cut;
 	}
 
-	elements.clear();
-
 	SelectingSideMenu::cancelWork();
+	clearWork();
 }
 
 void Menu_Cut::loopWork()
@@ -1017,10 +1041,22 @@ void Menu_Cut::beginClipboardPaste(std::istream& is)
 	}
 }
 
+void Menu_Cut::clearWork()
+{
+	elements.clear();
+
+	if (from_clipboard && prev_menu) {
+		auto& main_window = MainWindow::get();
+		main_window.setCurrentSideMenu(prev_menu);
+	}
+
+	from_clipboard = false;
+	prev_menu      = nullptr;
+}
+
 Menu_Delete::Menu_Delete() :
 	SideMenu("Delete")
-{
-}
+{}
 
 void Menu_Delete::loop()
 {
@@ -1178,6 +1214,10 @@ void Menu_Wire::loop()
 void Menu_Wire::eventProc(const vk2d::Event& e, float dt)
 {
 	switch (e.type) {
+	case Event::KeyPressed: {
+		if (e.keyboard.key == Key::Escape)
+			is_wiring = false;
+	} break;
 	case Event::MousePressed: {
 		auto& ws = getCurrentWindowSheet();
 
@@ -1210,13 +1250,18 @@ void Menu_Wire::eventProc(const vk2d::Event& e, float dt)
 
 				if (wiring) {
 					start_pos = pos;
-					return;
+					break;
 				}
 			}
 			
 			is_wiring = false;
-		} else if (e.mouseButton.button == Mouse::Right)
-			curr_wire_type = (curr_wire_type + 1) % 5;
+		} else if (e.mouseButton.button == Mouse::Right) {
+			if (is_wiring && Mouse::isPressed(Mouse::Left)) {
+				is_wiring = false;
+			} else {
+				curr_wire_type = (curr_wire_type + 1) % 5;
+			}
+		}
 	}break;
 	}
 }
@@ -1250,7 +1295,7 @@ void Menu_Wire::addWires(std::vector<Wire>&& stack)
 	while (!stack.empty()) {
 		auto wire = stack.back(); stack.pop_back();
 
-		auto result = ws.sheet->bvh.query(wire.getAABB(), [&](auto iter) {
+		auto canceled = ws.sheet->bvh.query(wire.getAABB(), [&](auto iter) {
 			CircuitElement& elem = *iter->second;
 
 			if (elem.getType() != CircuitElement::Wire) BVH_CONTINUE;
@@ -1277,7 +1322,7 @@ void Menu_Wire::addWires(std::vector<Wire>&& stack)
 			BVH_CONTINUE;
 		});
 
-		if (!result) {
+		if (!canceled) {
 			wire.dot0 = checkWireCrossing(wire.p0);
 			wire.dot1 = checkWireCrossing(wire.p1);
 			cmd->elements.emplace_back(wire.clone());
