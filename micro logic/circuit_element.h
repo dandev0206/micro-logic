@@ -112,14 +112,19 @@ public:
 public:
 	struct Shared {
 		std::string name;
+		std::string category;
 		std::string description;
 		uint64_t    shared_id;
 		uint64_t    element_id;
-		uint64_t    texture_id;
-		uint64_t    mask_id;
-		Rect        texture_coord;
-		uvec2       texture_extent;
 		Rect        extent;
+
+		const vk2d::Texture* texture;
+		const vk2d::Texture* texture_mask;
+		uint64_t             texture_id;
+		uint64_t             texture_mask_id;
+		Rect                 texture_coord;
+		uvec2                texture_extent;
+		
 		vk2d::Image image_mask;
 
 		std::vector<PinLayout> pin_layouts;

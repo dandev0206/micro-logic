@@ -292,7 +292,7 @@ void LogicGate::draw(vk2d::DrawList& draw_list) const
 	v3.color = mask_color;
 
 	{
-		auto& cmd = draw_list[shared->mask_id + TEXTURE_ID_OFF];
+		auto& cmd = draw_list[shared->texture_mask_id + TEXTURE_ID_OFF];
 
 		auto idx = cmd.reservePrims(4, 6);
 

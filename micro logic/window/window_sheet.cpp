@@ -175,7 +175,7 @@ void Window_Sheet::bindSchematicSheet(SchematicSheet& sheet)
 
 	draw_list.clear();
 	draw_list.resize(2);
-	for (auto& texture : main_window.textures) {
+	for (auto& texture : main_window.gate_textures) {
 		auto& cmd = draw_list.commands.emplace_back();
 
 		cmd.options.texture = &texture;

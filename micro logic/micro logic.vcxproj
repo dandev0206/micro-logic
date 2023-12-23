@@ -206,6 +206,7 @@
     <Image Include="resources\icons.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\README.md" />
     <None Include="imgui.ini" />
   </ItemGroup>
   <ItemGroup>

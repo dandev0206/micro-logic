@@ -23,7 +23,6 @@ vcpkg install tinyxml2
 Since the project uses it's own 2d grphics library **vk2d**. So you have to install [Vulkan SDK](https://vulkan.lunarg.com/).
 
 # To Do
-* save schematic sheet using binary mode
 * consider using boost::fast_pool_allocator
 * upgrade bvh insertion code
 * allow bvh to batch insertion

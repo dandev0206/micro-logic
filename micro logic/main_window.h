@@ -12,6 +12,9 @@
 #include <vk2d/system/font.h>
 #include <chrono>
 
+#define DEFAULT_FONT_IDX 0
+#define TEXTURE_IDX_ICONS 0
+
 class MainWindow : public ResizingLoop {
 private:
 	static MainWindow* main_window;
@@ -125,10 +128,11 @@ public: // settings
 
 public:
 	vk2d::Window window;
-	vk2d::Font   font;
 
-	std::vector<SideMenuPtr_t> side_menus;
+	std::vector<vk2d::Font>    fonts;
 	std::vector<vk2d::Texture> textures;
+	std::vector<vk2d::Texture> gate_textures;
+	std::vector<SideMenuPtr_t> side_menus;
 	std::vector<LogicGate>     logic_gates;
 	std::vector<LogicUnit>     logic_units;
 

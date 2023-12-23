@@ -94,7 +94,7 @@ MainWindow::MainWindow() :
 	titlebar.bindWindow(window);
 
 	{ // load font
-		font.loadFromFile(FONT_PATH);
+		fonts.emplace_back().loadFromFile(DEFAULT_FONT_PATH);
 	}
 	{ // load side menus
 		side_menus.emplace_back(std::make_unique<Menu_Info>());
@@ -116,22 +116,19 @@ MainWindow::MainWindow() :
 		icon_image.loadFromFile(RESOURCE_DIR_NAME"icons.png");
 
 		textures.emplace_back(icon_image);
-		textures.emplace_back(font.getTexture(100));
+		for (const auto& font : fonts)
+			textures.emplace_back(font.getTexture(DEFAULT_GRID_SIZE));
 	}
 	{ // load circuit elements
 		CircuitElementLoader loader;
-
-		loader.load(RESOURCE_DIR_NAME"elements.xml", font);
+		loader.load(RESOURCE_DIR_NAME"elements.xml", fonts[DEFAULT_FONT_IDX]);
 
 		logic_gates.swap(loader.logic_gates);
-		logic_units.swap(loader.logic_units);
-		for (auto& data : loader.texture_datas) {
-			textures.emplace_back(data.texture.release());
-			textures.emplace_back(std::move(data.texture_mask));
-		}
+		gate_textures.swap(loader.textures);
 	}
 	{
 		window_library.bindMenuLibrary(dynamic_cast<Menu_Library&>(*side_menus[3]));
+		window_library.updateElementTree();
 	}
 
 	resize_tab_hovered = false;
@@ -238,7 +235,7 @@ void MainWindow::loop() {
 		ImGui::VK2D::RenderViewports(window);
 	}
 
-	//vk2d::TextureView view(textures[2]);
+	//vk2d::TextureView view(gate_textures[0]);
 	//view.setPosition(100, 100);
 	//window.draw(view);
 
@@ -871,7 +868,7 @@ bool MainWindow::exportSchematicSheet(const SchematicSheet& sheet)
 
 bool MainWindow::openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::string& project_dir, const std::string& path)
 {
-	std::ifstream file(path);
+	std::ifstream file(path, std::ios::binary);
 
 	if (!file.is_open()) {
 		MessageBox msg_box;
@@ -897,7 +894,7 @@ bool MainWindow::openSchematicSheetImpl(SchematicSheetPtr_t& sheet, const std::s
 
 bool MainWindow::saveSchematicSheetImpl(const SchematicSheet& sheet, const std::string& path)
 {
-	std::ofstream of(path);
+	std::ofstream of(path, std::ios::binary);
 
 	if (!of.is_open()) {
 		MessageBox msg_box;
@@ -908,7 +905,9 @@ bool MainWindow::saveSchematicSheetImpl(const SchematicSheet& sheet, const std::
 		return false;
 	}
 
-	sheet.serialize(of);
+	std::stringstream ss;
+	sheet.serialize(ss);
+	of << ss.str();
 
 	return true;
 }

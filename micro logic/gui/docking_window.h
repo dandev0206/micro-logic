@@ -15,7 +15,7 @@ public:
 	vec2 getCursorPos() const;
 
 protected:
-	void beginDockWindow(const char* name, bool* p_open = NULL, ImGuiWindowFlags flags = 0);
+	bool beginDockWindow(const char* name, bool* p_open = NULL, ImGuiWindowFlags flags = 0);
 	void endDockWindow();
 
 public:

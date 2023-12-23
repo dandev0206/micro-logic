@@ -61,7 +61,7 @@ static priv::DialogImpl* push_dialog_impl(Dialog* dialog = nullptr)
 	style.WindowPadding = ImVec2(20, 20);
 	style.ItemSpacing   = ImVec2(20, 20);
 
-	auto* font = io.Fonts->AddFontFromFileTTF(FONT_PATH, FONT_SIZE, nullptr, io.Fonts->GetGlyphRangesKorean());
+	auto* font = io.Fonts->AddFontFromFileTTF(DEFAULT_FONT_PATH, FONT_SIZE, nullptr, io.Fonts->GetGlyphRangesKorean());
 	ImGui::VK2D::UpdateFontTexture(impl->window);
 	
 	ImGui::VK2D::Update(impl->window, 1.f / 60.f);

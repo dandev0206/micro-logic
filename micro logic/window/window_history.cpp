@@ -102,7 +102,7 @@ void Window_History::showUI()
 				ws.setCurrCommandTo(next_command);
 		}
 	} else {
-		static const char* msg = "there is no window sheet avaliable";
+		static const char* msg = "open sheet";
 
 		auto size = ImGui::CalcTextSize(msg);
 		auto pos  = ImVec2((content_rect.width - size.x) / 2.f, (content_rect.height + size.y) / 2.f);

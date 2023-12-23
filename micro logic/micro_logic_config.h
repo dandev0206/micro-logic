@@ -1,7 +1,7 @@
 #pragma once
 
 #define RESOURCE_DIR_NAME "resources\\"
-#define FONT_PATH "C:/Windows/Fonts/consola.ttf"
+#define DEFAULT_FONT_PATH "C:/Windows/Fonts/consola.ttf"
 
 #define FONT_SIZE 25
 

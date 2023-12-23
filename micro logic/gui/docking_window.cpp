@@ -41,7 +41,7 @@ vec2 DockingWindow::getCursorPos() const
 	return (vec2)vk2d::Mouse::getPosition(*window);
 }
 
-void DockingWindow::beginDockWindow(const char* name, bool* p_open, ImGuiWindowFlags flags)
+bool DockingWindow::beginDockWindow(const char* name, bool* p_open, ImGuiWindowFlags flags)
 {	
 	auto prev_size    = window_rect.getSize();
 	auto prev_visible = visible; 
@@ -72,6 +72,8 @@ void DockingWindow::beginDockWindow(const char* name, bool* p_open, ImGuiWindowF
 	hovered  = ImGui::IsWindowHovered();
 
 	window_name = name;
+
+	return visible;
 }
 
 void DockingWindow::endDockWindow()
